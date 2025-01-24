@@ -1,0 +1,9 @@
+express
+mongoose
+bcryptjs
+jsonwebtoken
+cookie-parser
+dotenv
+cors
+express-validator
+nodemon
