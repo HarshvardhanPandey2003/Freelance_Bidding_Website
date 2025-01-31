@@ -6,12 +6,14 @@ import { User } from '../models/User.model.js';
 // Define a function of how to create a token you'll be using this to generate JWT Token
 const createToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
+// Checks for duplicate users using User.findOne(). Creates a new user with User.create().
+// Generates a JWT token and attaches it to cookies. Sends a JSON response with user details.
 export const register = async (req, res) => {
   try {
     const { username, email, password, role } = req.body;
     //This line is to identify dublicates and throw an error if found one 
     //'$or' means either the username or email matches the 
-    if (await User.findOne({ $or: [{ email }, { username }] })) {
+    if (await User.findOne({ $or: [{ email }, { username }] }).select('_id')) {
       return res.status(400).json({ error: 'User already exists' });
     }//Here we used await because you were returning a value 
 
@@ -27,6 +29,7 @@ export const register = async (req, res) => {
 // It provides the client with useful information about the user (e.g., their id, username, and role
     res.json({ id: user._id, username, role });
   } catch (err) {
+    console.error('Registration Error:', err);
     res.status(400).json({ error: err.message });
   }
 };
@@ -60,4 +63,13 @@ export const login = async (req, res) => {
 export const logout = (req, res) => {
   res.clearCookie('jwt');
   res.json({ message: 'Logged out' });
+};
+
+export const test = async (req, res) => {
+  res.status(200).json({
+    id: req.user._id,
+    username: req.user.username,
+    email: req.user.email,
+    role: req.user.role
+  });
 };

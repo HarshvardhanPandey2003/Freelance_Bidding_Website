@@ -1,35 +1,22 @@
-// STEP 2: Create API Service Foundation
-// File: frontend/src/services/api.js
+// frontend/src/services/api.js
 
 import axios from 'axios';
-
-// Base configuration
+//Axios is like a messenger between your frontend and backend. 
+// It helps send requests (like GET, POST) to your backend API and brings back responses.
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL,
   withCredentials: true
 });
 
-// Request interceptor skeleton
-api.interceptors.request.use((config) => {
-  // We'll add JWT logic later
-  return config;
-});
-
-// Response interceptor skeleton
+export const projectService = {
+  createProject: (data) => api.post('/api/projects', data),
+  getClientProjects: () => api.get('/api/projects')
+};
+ 
+// Add response interceptor for error handling
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // We'll handle errors later
-    return Promise.reject(error);
+  response => response,
+  error => {
+    return Promise.reject(error.response?.data?.error || 'Something went wrong');
   }
 );
-
-// Temporary test function - delete this later
-export const testConnection = async () => {
-  try {
-    const response = await api.get('/auth/ping');
-    console.log('Connection test:', response.data);
-  } catch (error) {
-    console.error('Connection failed:', error);
-  }
-};

@@ -1,18 +1,32 @@
+// frontend/src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import  { AuthForm }  from './components/auth/AuthForm';
+import { SignUp } from './pages/SignUp';
+import { Login } from './pages/Login';
+import { Dashboard } from './pages/Dashboard';
+import { CreateProject } from './pages/CreateProject';
+import { PrivateRoute } from './routes/PrivateRoute';
+import { Navbar } from './components/Navbar';
 
-function App() {
-  return (
-    <Router>
-      <Routes>
-        {/* Add your new route for the AuthForm */}
-        <Route path="api/auth/test-form" element={<AuthForm />} />
+export const App = () => (
+  <Router>
+    <Routes>
+      {/* Public routes */}
+      <Route path="/" element={<SignUp />} />
+      <Route path="/login" element={<Login />} />
 
-        {/* Add other routes here if needed */}
-        <Route path="/" element={<h1>Welcome to the Freelance Bidding Website</h1>} />
-      </Routes>
-    </Router>
-  );
-}
-
-export default App;
+      {/* Protected routes wrapper */}
+      <Route element={<>
+        <Navbar />
+        <PrivateRoute allowedRoles={['client', 'freelancer']} />
+      </>}>
+        <Route path="/dashboard" element={<Dashboard />} />
+        
+        {/* Client-only routes*/}
+        <Route element={<PrivateRoute allowedRoles={['client']} />}>
+          <Route path="/create-project" element={<CreateProject />} />
+        </Route> 
+        
+      </Route>
+    </Routes>
+  </Router>
+);
