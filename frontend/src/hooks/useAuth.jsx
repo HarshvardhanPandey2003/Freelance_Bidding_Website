@@ -1,4 +1,4 @@
-//useAuth.jsx
+//frontend/src/useAuth.jsx
 import { useState, useEffect } from 'react';
 import { api } from '../services/api';
 //This function is used in App.jsx and 

@@ -8,11 +8,13 @@ export const api = axios.create({
   withCredentials: true
 });
 
-export const projectService = {
-  createProject: (data) => api.post('/api/projects', data),
-  getClientProjects: () => api.get('/api/projects')
-};
- 
+// export const projectService = {
+//   createProject: (data) => api.post('/api/projects', data),
+//   getClientProjects: () => api.get('/api/projects')
+// // };
+// Instead of this you can write the 2nd one 
+// const { data } = await api.get('/api/projects');
+// const { data } = await projectService.getClientProjects();
 // Add response interceptor for error handling
 api.interceptors.response.use(
   response => response,
@@ -20,3 +22,5 @@ api.interceptors.response.use(
     return Promise.reject(error.response?.data?.error || 'Something went wrong');
   }
 );
+
+

@@ -1,4 +1,5 @@
 // 2.) backend/src/middleware/auth.middleware.js
+
 // Checks for a JWT token in cookies.
 // Verifies the token using jwt.verify().
 // Fetches the user from the database and attaches it to req.user.

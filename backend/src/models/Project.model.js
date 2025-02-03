@@ -1,47 +1,14 @@
 // backend/src/models/Project.model.js
 import mongoose from 'mongoose';
-import { Skill } from './Skill.model.js';
 
-const projectSchema = new mongoose.Schema({
-  title: { 
-    type: String, 
-    required: [true, 'Project title is required'] 
-  },
-  description: { 
-    type: String, 
-    required: [true, 'Project description is required'] 
-  },
-  budget: { 
-    type: Number, 
-    required: true,
-    min: [0.01, 'Budget must be at least 0.01']
-  },
-  deadline: { 
-    type: Date,
-    required: true,
-    validate: {
-      validator: function(v) {
-        return v > Date.now();
-      },
-      message: 'Deadline must be in the future'
-    }
-  },
-  status: { 
-    type: String, 
-    enum: ['OPEN', 'IN_PROGRESS', 'COMPLETED'],
-    default: 'OPEN'
-  },
-  client: { 
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true 
-  },
-  //  Defines the structure of projects, including a reference to the Skill schema via ObjectId.
-  skills: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Skill',
-    required: true
-  }]
+const ProjectSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  budget: { type: Number, required: true },
+  deadline: { type: Date, required: true },
+  status: { type: String, default: 'OPEN' },
+  client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },// Making a forien key
+  skills: [{ type: String }], // Ensure it's an array
 }, { timestamps: true });
 
-export const Project = mongoose.model('Project', projectSchema);
+export const Project = mongoose.model('Project', ProjectSchema);

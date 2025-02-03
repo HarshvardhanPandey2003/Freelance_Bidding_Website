@@ -1,16 +1,36 @@
 // backend/src/routes/project.routes.js
 import express from 'express';
-import { createProject, getClientProjects } from '../controllers/project.controller.js';
+import { 
+  createProject,
+  getClientProjects,
+  getSkills,
+  getProjectById,
+  updateProject,
+  deleteProject,
+  getOpenProjects
+} from '../controllers/project.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { requireRole } from '../middleware/role.middleware.js';
+import asyncHandler from '../utils/asyncHandler.js';
+import { validateSkills } from '../middleware/validation.middleware.js';
+import { cacheProjects } from '../middleware/cache.middleware.js';
 
-//We use hooks like protect to check the JWT Tokens and requireRole for RBAC  
+//"protect means apply authentication middleware to all routes"
 const router = express.Router();
-router.use(protect, requireRole('client'));
+router.use(protect);
 
-// This means that in this url we'll do both get and post 
-router.route('/')
-  .post(createProject)
-  .get(getClientProjects);
+// Skill-related routes
+router.get('/skills',requireRole('client'), asyncHandler(getSkills)); 
+  router.post('/', requireRole('client'), validateSkills, createProject);
+router.get('/', requireRole('client'), getClientProjects);
+
+// This route is added outside of the client-only middleware group.
+router.get('/open', requireRole('freelancer'), cacheProjects, asyncHandler(getOpenProjects));
+  
+// Project CRUD routes
+router.route('/:id')
+    .get(asyncHandler(getProjectById))
+    .put(asyncHandler(updateProject))
+    .delete(asyncHandler(deleteProject));
 
 export default router;

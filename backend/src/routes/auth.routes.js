@@ -1,4 +1,4 @@
-// routes/auth.js
+// backend/src/routes/auth.js
 import express from 'express';
 import { register, login, logout, test } from '../controllers/auth.controller.js';
 import { protect } from '../middleware/auth.middleware.js';

@@ -3,7 +3,8 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 // Adjust the import path according to your project structure
 import '../output.css';
-
+// We use this function in the routes part for maintaing the access control
+// Also we de handle the case for where the user should navigate if they are or not logged in
 export const PrivateRoute = ({ allowedRoles }) => {
   const { user, loading } = useAuth();
 
