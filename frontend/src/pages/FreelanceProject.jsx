@@ -10,22 +10,41 @@ export const FreelanceProject = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { socket, bids } = useSocket();
+  const { socket } = useSocket();
   const [project, setProject] = useState(null);
   const [localBids, setLocalBids] = useState([]);
   const [error, setError] = useState('');
   const [userBid, setUserBid] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch project and bids
   useEffect(() => {
     const fetchData = async () => {
+      if (!user || authLoading) return;
+
       try {
-        const projectRes = await api.get(`/api/projects/${id}`);
-        const bidsRes = await api.get(`/api/bids/project/${id}`);
+        const [projectRes, bidsRes] = await Promise.all([
+          api.get(`/api/projects/${id}`),
+          api.get(`/api/bids/project/${id}`)
+        ]);
+
+        // Normalize bids data
+        const normalizedBids = bidsRes.data.map(bid => ({
+          ...bid,
+          _id: bid._id?.toString(),
+          project: bid.project?.toString(),
+          freelancer: {
+            ...bid.freelancer,
+            _id: bid.freelancer?._id?.toString()
+          }
+        }));
+
         setProject(projectRes.data);
-        setLocalBids(bidsRes.data);
-        const existingBid = bidsRes.data.find(
-          (bid) => bid.freelancer?.id === user?._id?.toString()
+        setLocalBids(normalizedBids);
+
+        // Find the user's bid
+        const existingBid = normalizedBids.find(
+          bid => bid.freelancer?._id === user._id?.toString()
         );
         setUserBid(existingBid);
       } catch (err) {
@@ -35,57 +54,65 @@ export const FreelanceProject = () => {
       }
     };
 
-    if (!user || authLoading) return;
-
     fetchData();
+  }, [id, user, authLoading]);
 
-    if (!socket) return; // Early exit if socket is not available
+  // WebSocket event handling
+  useEffect(() => {
+    if (!socket) return;
 
-    const updateBids = (updateType, payload) => {
+    const handleBidEvent = (type, payload) => {
+      if (!payload?.project || payload.project.toString() !== id) return;
+
       setLocalBids(prev => {
-        switch (updateType) {
+        switch (type) {
           case 'new':
-            return [...prev, payload];
+            return [...prev, {
+              ...payload,
+              _id: payload._id?.toString(),
+              project: payload.project?.toString(),
+              freelancer: {
+                ...payload.freelancer,
+                _id: payload.freelancer?._id?.toString()
+              }
+            }];
           case 'update':
-            return prev.map(bid => bid._id === payload._id ? payload : bid);
+            return prev.map(bid =>
+              bid._id === payload._id?.toString() ? {
+                ...payload,
+                _id: payload._id?.toString(),
+                project: payload.project?.toString(),
+                freelancer: {
+                  ...payload.freelancer,
+                  _id: payload.freelancer?._id?.toString()
+                }
+              } : bid
+            );
           case 'delete':
-            return prev.filter(bid => bid._id !== payload.bidId);
+            return prev.filter(bid => bid._id !== payload.bidId?.toString());
           default:
             return prev;
         }
       });
     };
 
-    // WebSocket event listeners
-    socket.on('newBid', (newBid) => {
-      if (newBid.project.toString() === id) {
-        updateBids('new', newBid);
-      }
-    });
-
-    socket.on('bidUpdate', (updatedBid) => {
-      if (updatedBid.project.toString() === id) {
-        updateBids('update', updatedBid);
-      }
-    });
-
-    socket.on('bidDelete', (payload) => {
-      if (payload.projectId === id) {
-        updateBids('delete', { bidId: payload.bidId });
-      }
-    });
+    socket.on('newBid', (bid) => handleBidEvent('new', bid));
+    socket.on('bidUpdate', (bid) => handleBidEvent('update', bid));
+    socket.on('bidDelete', ({ bidId }) => handleBidEvent('delete', { bidId }));
 
     return () => {
       socket.off('newBid');
       socket.off('bidUpdate');
       socket.off('bidDelete');
     };
-  }, [id, user, authLoading, socket]);
+  }, [socket, id]);
 
+  // Handle bid deletion
   const handleDeleteBid = async (bidId) => {
     try {
       await api.delete(`/api/bids/${bidId}`);
       setUserBid(null);
+      setLocalBids(prev => prev.filter(bid => bid._id !== bidId));
     } catch (err) {
       console.error('Error deleting bid:', err);
     }

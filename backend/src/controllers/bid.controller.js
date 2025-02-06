@@ -39,16 +39,25 @@ export const createBid = asyncHandler(async (req, res) => {
     message
   });
 
-  // Emit to all clients
-  io.emit('newBid', bid);
-
   // Respond with populated data
   const populatedBid = await Bid.findById(bid._id)
-    .populate('freelancer', 'username rating')
-    .populate('project', 'title status')
-    .exec();
+  .populate('freelancer', 'username _id')
+  .lean();
 
-  res.status(201).json(populatedBid);
+// Ensure required fields exist
+const serializedBid = {
+  ...populatedBid,
+  _id: populatedBid._id.toString(),
+  project: populatedBid.project.toString(),
+  bidAmount: populatedBid.bidAmount, // Ensure this exists
+  freelancer: {
+    _id: populatedBid.freelancer._id.toString(),
+    username: populatedBid.freelancer.username
+  }
+};
+
+io.emit('newBid', serializedBid);
+  res.status(201).json(serializedBid);
 });
 
 // ==================================
@@ -105,13 +114,14 @@ export const updateBid = asyncHandler(async (req, res) => {
   bid.message = message;
   await bid.save();
 
-  // Emit update to all clients
-  io.emit('bidUpdate', bid);
+  // // Emit update to all clients
+  // io.emit('bidUpdate', bid);
 
   const populatedBid = await Bid.findById(bid._id)
-    .populate('freelancer', 'username rating')
-    .populate('project', 'title status')
-    .exec();
+  .populate('freelancer', 'username rating')
+  .exec();
+
+  io.emit('bidUpdate', populatedBid.toObject());
 
   res.json(populatedBid);
 });

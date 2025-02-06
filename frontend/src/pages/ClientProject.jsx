@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { api } from '../services/api';
@@ -6,67 +6,106 @@ import { useAuth } from '../hooks/useAuth';
 import { useSocket } from '../hooks/SocketContext';
 
 const ClientProject = () => {
-  const { id } = useParams(); // project ID
+  const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { socket } = useSocket(); // Access socket from context
+  const { socket } = useSocket();
   const [project, setProject] = useState(null);
   const [localBids, setLocalBids] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Fetch project and bids
   useEffect(() => {
-    const fetchProject = async () => {
+    const fetchData = async () => {
       try {
-        const projectData = await api.get(`/api/projects/${id}`);
-        setProject(projectData.data);
-        const bidsData = await api.get(`/api/bids/project/${id}`);
-        setLocalBids(bidsData.data);
+        const [projectRes, bidsRes] = await Promise.all([
+          api.get(`/api/projects/${id}`),
+          api.get(`/api/bids/project/${id}`)
+        ]);
+
+        // Normalize bids data
+        const normalizedBids = bidsRes.data.map(bid => ({
+          ...bid,
+          _id: bid._id?.toString(),
+          project: bid.project?.toString(),
+          bidAmount: bid.bidAmount || 0,
+          freelancer: {
+            ...bid.freelancer,
+            _id: bid.freelancer?._id?.toString(),
+            username: bid.freelancer?.username || 'Unknown'
+          }
+        }));
+
+        setProject(projectRes.data);
+        setLocalBids(normalizedBids);
       } catch (err) {
-        console.error('Error fetching project:', err);
         setError('Failed to load project details.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProject();
+    fetchData();
+  }, [id]);
 
-    if (!socket) return; // Early exit if socket is not available
+  // WebSocket event handling
+  useEffect(() => {
+    if (!socket) return;
 
-    // WebSocket event handlers
-    const handleNewBid = (newBid) => {
-      if (newBid.project.toString() === id) {
-        setLocalBids((prev) => [...prev, newBid]);
-      }
+    const handleBidEvent = (type, payload) => {
+      if (!payload?.project || payload.project.toString() !== id) return;
+
+      setLocalBids(prev => {
+        switch (type) {
+          case 'new':
+            return [...prev, {
+              ...payload,
+              _id: payload._id?.toString(),
+              project: payload.project?.toString(),
+              bidAmount: payload.bidAmount || 0,
+              freelancer: {
+                ...payload.freelancer,
+                _id: payload.freelancer?._id?.toString(),
+                username: payload.freelancer?.username || 'Unknown'
+              }
+            }];
+          case 'update':
+            return prev.map(bid =>
+              bid._id === payload._id?.toString() ? {
+                ...payload,
+                _id: payload._id?.toString(),
+                project: payload.project?.toString(),
+                bidAmount: payload.bidAmount || 0,
+                freelancer: {
+                  ...payload.freelancer,
+                  _id: payload.freelancer?._id?.toString(),
+                  username: payload.freelancer?.username || 'Unknown'
+                }
+              } : bid
+            );
+          case 'delete':
+            return prev.filter(bid => bid._id !== payload.bidId?.toString());
+          default:
+            return prev;
+        }
+      });
     };
 
-    const handleBidUpdate = (updatedBid) => {
-      if (updatedBid.project.toString() === id) {
-        setLocalBids((prev) =>
-          prev.map((bid) => (bid._id === updatedBid._id ? updatedBid : bid))
-        );
-      }
-    };
-
-    const handleBidDelete = (payload) => {
-      if (payload.projectId === id) {
-        setLocalBids((prev) => prev.filter((bid) => bid._id !== payload.bidId));
-      }
-    };
-
-    // Set up WebSocket listeners
-    socket.on('newBid', handleNewBid);
-    socket.on('bidUpdate', handleBidUpdate);
-    socket.on('bidDelete', handleBidDelete);
+    socket.on('newBid', (bid) => handleBidEvent('new', bid));
+    socket.on('bidUpdate', (bid) => handleBidEvent('update', bid));
+    socket.on('bidDelete', ({ bidId }) => handleBidEvent('delete', { bidId }));
 
     return () => {
-      socket.off('newBid', handleNewBid);
-      socket.off('bidUpdate', handleBidUpdate);
-      socket.off('bidDelete', handleBidDelete);
+      socket.off('newBid');
+      socket.off('bidUpdate');
+      socket.off('bidDelete');
     };
-  }, [id, socket]);
+  }, [socket, id]);
 
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
+  if (!project) return null;
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex justify-center items-center">
@@ -150,7 +189,7 @@ const ClientProject = () => {
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="text-indigo-400 font-medium">
-                        ${bid.bidAmount.toFixed(2)}
+                      ${bid.bidAmount?.toFixed(2) || '0.00'}
                       </p>
                       {bid.message && (
                         <p className="text-gray-300 mt-1">{bid.message}</p>
