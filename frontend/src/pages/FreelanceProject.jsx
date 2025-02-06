@@ -1,175 +1,150 @@
-// frontend/src/pages/FreelanceProject.jsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { useSocket } from '../hooks/SocketContext';
+import { Bids } from '../components/Bids';
 
 export const FreelanceProject = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
-
+  const { user, loading: authLoading } = useAuth();
+  const { socket, bids } = useSocket();
   const [project, setProject] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [localBids, setLocalBids] = useState([]);
   const [error, setError] = useState('');
-  
-  // States for bid submission
-  const [bidAmount, setBidAmount] = useState('');
-  const [bidMessage, setBidMessage] = useState('');
-  const [bidError, setBidError] = useState('');
-  const [bidSuccess, setBidSuccess] = useState('');
+  const [userBid, setUserBid] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProject = async () => {
+    const fetchData = async () => {
       try {
-        const { data } = await api.get(`/api/projects/${id}`);
-        setProject(data);
+        const projectRes = await api.get(`/api/projects/${id}`);
+        const bidsRes = await api.get(`/api/bids/project/${id}`);
+        setProject(projectRes.data);
+        setLocalBids(bidsRes.data);
+        const existingBid = bidsRes.data.find(
+          (bid) => bid.freelancer?.id === user?._id?.toString()
+        );
+        setUserBid(existingBid);
       } catch (err) {
-        console.error('Error fetching project:', err);
-        setError('Failed to load project details.');
+        setError('Failed to load project data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProject();
-  }, [id]);
+    if (!user || authLoading) return;
 
-  const handleBidSubmit = async (e) => {
-    e.preventDefault();
-    if (!bidAmount || isNaN(bidAmount) || parseFloat(bidAmount) <= 0) {
-      setBidError('Please enter a valid bid amount.');
-      return;
-    }
+    fetchData();
+
+    if (!socket) return; // Early exit if socket is not available
+
+    const updateBids = (updateType, payload) => {
+      setLocalBids(prev => {
+        switch (updateType) {
+          case 'new':
+            return [...prev, payload];
+          case 'update':
+            return prev.map(bid => bid._id === payload._id ? payload : bid);
+          case 'delete':
+            return prev.filter(bid => bid._id !== payload.bidId);
+          default:
+            return prev;
+        }
+      });
+    };
+
+    // WebSocket event listeners
+    socket.on('newBid', (newBid) => {
+      if (newBid.project.toString() === id) {
+        updateBids('new', newBid);
+      }
+    });
+
+    socket.on('bidUpdate', (updatedBid) => {
+      if (updatedBid.project.toString() === id) {
+        updateBids('update', updatedBid);
+      }
+    });
+
+    socket.on('bidDelete', (payload) => {
+      if (payload.projectId === id) {
+        updateBids('delete', { bidId: payload.bidId });
+      }
+    });
+
+    return () => {
+      socket.off('newBid');
+      socket.off('bidUpdate');
+      socket.off('bidDelete');
+    };
+  }, [id, user, authLoading, socket]);
+
+  const handleDeleteBid = async (bidId) => {
     try {
-      const payload = {
-        freelancerId: user._id,
-        amount: parseFloat(bidAmount),
-        message: bidMessage,
-      };
-      // Assume the bid endpoint is structured as shown
-      await api.post(`/api/projects/${id}/bids`, payload);
-      setBidSuccess('Bid submitted successfully.');
-      setBidError('');
-      setBidAmount('');
-      setBidMessage('');
+      await api.delete(`/api/bids/${bidId}`);
+      setUserBid(null);
     } catch (err) {
-      console.error('Error submitting bid:', err);
-      setBidError('Failed to submit bid.');
-      setBidSuccess('');
+      console.error('Error deleting bid:', err);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex justify-center items-center">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error}
-        </div>
-      </div>
-    );
-  }
-
-  if (!project) return null;
+  if (authLoading) return <div>Loading...</div>;
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
+  if (!project) return <div>No project found</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <button 
-          onClick={() => navigate(-1)} 
-          className="text-indigo-500 hover:underline mb-4"
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-8">
+      <div className="max-w-4xl mx-auto">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-indigo-400 hover:text-indigo-300 mb-6"
         >
-          &larr; Back
+          &larr; Back to Projects
         </button>
 
-        <div className="bg-gray-800/50 rounded-2xl p-6">
-          <div className="mb-4">
-            <h1 className="text-3xl font-bold">{project.title}</h1>
+        <div className="bg-gray-800/50 rounded-xl p-6 mb-6">
+          <h1 className="text-3xl font-bold mb-4">{project.title}</h1>
+          <p className="text-gray-300 mb-4">{project.description}</p>
+
+          <div className="flex gap-4 text-sm text-gray-400">
+            <span>Budget: ${project.budget.toFixed(2)}</span>
+            <span>Deadline: {format(new Date(project.deadline), 'PP')}</span>
             <span
-              className={`text-xs font-medium rounded-full px-2 py-1 uppercase 
-                ${project.status === 'OPEN' 
-                  ? 'bg-green-500/90 text-white' 
-                  : project.status === 'IN_PROGRESS' 
-                  ? 'bg-yellow-500/90 text-gray-800' 
-                  : 'bg-gray-500/90 text-white'}`}
+              className={`px-2 py-1 rounded-full ${
+                project.status === 'OPEN' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+              }`}
             >
               {project.status}
             </span>
           </div>
 
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold mb-2">Description</h2>
-            <p className="text-gray-400">{project.description}</p>
-          </div>
-
-          {project.skills && project.skills.length > 0 && (
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold mb-2">Required Skills</h2>
-              <ul className="flex flex-wrap gap-2">
-                {project.skills.map((skill) => (
-                  <li 
-                    key={skill} 
-                    className="bg-indigo-500/20 text-indigo-300 text-sm font-medium px-2 py-1 rounded"
-                  >
-                    {skill}
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {project.status === 'OPEN' && (
+            <>
+              {userBid ? (
+                <button
+                  onClick={() => navigate(`/edit-bid/${userBid._id}`)}
+                  className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg"
+                >
+                  Edit Your Bid
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate(`/create-bid/${id}`)}
+                  className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg"
+                >
+                  Place Bid
+                </button>
+              )}
+            </>
           )}
-
-          <div className="flex flex-wrap gap-4 text-sm text-gray-400 mb-4">
-            <span>Budget: ${project.budget?.toFixed(2)}</span>
-            <span>Deadline: {format(new Date(project.deadline), 'MMM dd, yyyy')}</span>
-          </div>
         </div>
 
-        <div className="bg-gray-800/50 backdrop-blur-md p-6 rounded-lg mt-6">
-          <h2 className="text-2xl font-bold mb-4">Place Your Bid</h2>
-          {bidSuccess && <div className="mb-4 text-green-500">{bidSuccess}</div>}
-          {bidError && <div className="mb-4 text-red-500">{bidError}</div>}
-          <form onSubmit={handleBidSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Bid Amount ($)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={bidAmount}
-                onChange={(e) => setBidAmount(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-700 border rounded-lg text-white"
-                placeholder="Enter your bid amount"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Message</label>
-              <textarea
-                value={bidMessage}
-                onChange={(e) => setBidMessage(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-700 border rounded-lg text-white"
-                placeholder="Enter a message (optional)"
-                rows="4"
-              ></textarea>
-            </div>
-            <button
-              type="submit"
-              className="w-full py-3 px-4 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-medium rounded-lg transition-all transform hover:scale-[1.02] shadow-lg hover:shadow-indigo-500/30 active:scale-95"
-            >
-              Submit Bid
-            </button>
-          </form>
-        </div>
+        <Bids bids={localBids} userBid={userBid} onDelete={handleDeleteBid} />
       </div>
     </div>
   );
 };
-
-export default FreelanceProject;

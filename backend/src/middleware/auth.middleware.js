@@ -1,5 +1,4 @@
 // 2.) backend/src/middleware/auth.middleware.js
-
 // Checks for a JWT token in cookies.
 // Verifies the token using jwt.verify().
 // Fetches the user from the database and attaches it to req.user.
@@ -7,27 +6,65 @@
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.model.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import ApiError from '../utils/ApiError.js'; 
 
-export const protect = asyncHandler(async (req, res, next) => {
-  const token = req.cookies?.jwt;
-  
+export const authenticateSocket = async (socket, next) => {
+  const token = socket.handshake.auth?.token;
+
   if (!token) {
-    throw new ApiError(401, 'Not authorized - No token');
+    return next(new Error('Authentication error: No token provided'));
   }
 
   try {
-    //The jwt.verify() function verifies the token using the JWT_SECRET
+    // Verify the JWT token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id;
+
+    // Fetch the user from the database
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+      return next(new Error('Authentication error: User not found'));
+    }
+    // Attach the user to the socket
+    socket.user = user;
+    next();
+  } catch (err) {
+    // Handle JWT verification errors (expired or invalid token)
+    next(new Error('Authentication error: Invalid or expired token'));
+  }
+};
+
+
+export const protect = asyncHandler(async (req, res, next) => {
+  // Look for the JWT in a cookie named 'jwt'
+  const token = req.cookies?.jwt;
+  
+  if (!token) {
+    // For WebSocket context
+    if (typeof res.status !== 'function') {
+      return next(new Error('WS_AUTH_REQUIRED'));
+    }
+    // For regular HTTP context
+    throw new ApiError(401, 'Authentication required');
+  }
+
+  try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select('-password');
-    //The decoded object contains the payload of the JWT, which includes the user’s id
-    //and while finding the user through id we exclude password for security puposes 
+    
     if (!user) {
-      throw new ApiError(401, 'User not found');
-    }  
+      const error = new ApiError(401, 'User not found');
+      return typeof res.status === 'function' 
+        ? next(error) 
+        : next(new Error('WS_INVALID_USER'));
+    }
+
     req.user = user;
-    // Attach the user details to the request
     next();
-  }  catch (err) {
-    res.status(401).json({ error: 'Not authorized - Invalid token' });
+  } catch (err) {
+    if (typeof res.status !== 'function') {
+      return next(new Error('WS_INVALID_TOKEN'));
+    }
+    next(new ApiError(401, 'Invalid or expired token'));
   }
 });

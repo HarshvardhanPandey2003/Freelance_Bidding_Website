@@ -1,12 +1,37 @@
-//src/components/Navbar.jsx
+// frontend/src/components/Navbar.jsx
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../services/api';
+import { useEffect, useState } from 'react';
 import '../output.css';
 
 export const Navbar = () => {
   const { user, checkAuth } = useAuth();
   const navigate = useNavigate();
+  const [profileExists, setProfileExists] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        let response;
+        if (user.role === 'freelancer') {
+          response = await api.get('/api/profile/freelancer');
+        } else if (user.role === 'client') {
+          response = await api.get('/api/profile/client');
+        }
+        setProfileExists(true);
+      } catch (error) {
+        setProfileExists(false);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     try {
@@ -17,7 +42,7 @@ export const Navbar = () => {
       console.error('Logout error:', err);
     }
   };
-  // So to create a feature you have to start by creating a new function
+
   const handleBrandClick = (e) => {
     if (!user) {
       e.preventDefault();
@@ -40,12 +65,31 @@ export const Navbar = () => {
           </div>
           <div className="flex items-center space-x-4">
             {user ? (
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm hover:shadow-md active:scale-95"
-              >
-                Logout
-              </button>
+              <>
+                {loadingProfile ? (
+                  <span>Loading profile...</span>
+                ) : profileExists ? (
+                  <Link
+                    to={user.role === 'freelancer' ? '/freelancer-profile' : '/client-profile'}
+                    className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm hover:shadow-md active:scale-95"
+                  >
+                    Profile
+                  </Link>
+                ) : (
+                  <Link
+                    to={user.role === 'freelancer' ? '/create-freelancer-profile' : '/create-client-profile'}
+                    className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm hover:shadow-md active:scale-95"
+                  >
+                    Create Profile
+                  </Link>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm hover:shadow-md active:scale-95"
+                >
+                  Logout
+                </button>
+              </>
             ) : (
               <Link
                 to="/login"

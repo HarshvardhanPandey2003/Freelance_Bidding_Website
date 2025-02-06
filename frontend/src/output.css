@@ -1,4 +1,4 @@
-/*! tailwindcss v4.0.3 | MIT License | https://tailwindcss.com */
+/*! tailwindcss v4.0.4 | MIT License | https://tailwindcss.com */
 @layer theme, base, components, utilities;
 @layer theme {
   :root, :host {
@@ -599,14 +599,14 @@
   .mt-6 {
     margin-top: calc(var(--spacing) * 6);
   }
+  .mt-8 {
+    margin-top: calc(var(--spacing) * 8);
+  }
   .mt-12 {
     margin-top: calc(var(--spacing) * 12);
   }
   .mt-auto {
     margin-top: auto;
-  }
-  .mb-1 {
-    margin-bottom: calc(var(--spacing) * 1);
   }
   .mb-2 {
     margin-bottom: calc(var(--spacing) * 2);
@@ -625,6 +625,9 @@
   }
   .ml-2 {
     margin-left: calc(var(--spacing) * 2);
+  }
+  .ml-4 {
+    margin-left: calc(var(--spacing) * 4);
   }
   .line-clamp-3 {
     overflow: hidden;
@@ -662,6 +665,12 @@
   .h-16 {
     height: calc(var(--spacing) * 16);
   }
+  .h-40 {
+    height: calc(var(--spacing) * 40);
+  }
+  .h-48 {
+    height: calc(var(--spacing) * 48);
+  }
   .h-64 {
     height: calc(var(--spacing) * 64);
   }
@@ -689,11 +698,23 @@
   .w-12 {
     width: calc(var(--spacing) * 12);
   }
+  .w-40 {
+    width: calc(var(--spacing) * 40);
+  }
+  .w-48 {
+    width: calc(var(--spacing) * 48);
+  }
   .w-64 {
     width: calc(var(--spacing) * 64);
   }
   .w-full {
     width: 100%;
+  }
+  .max-w-2xl {
+    max-width: var(--container-2xl);
+  }
+  .max-w-3xl {
+    max-width: var(--container-3xl);
   }
   .max-w-4xl {
     max-width: var(--container-4xl);
@@ -713,8 +734,14 @@
   .animate-spin {
     animation: var(--animate-spin);
   }
+  .cursor-not-allowed {
+    cursor: not-allowed;
+  }
   .cursor-pointer {
     cursor: pointer;
+  }
+  .resize-none {
+    resize: none;
   }
   .appearance-none {
     appearance: none;
@@ -748,6 +775,9 @@
   }
   .gap-6 {
     gap: calc(var(--spacing) * 6);
+  }
+  .gap-8 {
+    gap: calc(var(--spacing) * 8);
   }
   .space-y-4 {
     :where(& > :not(:last-child)) {
@@ -798,9 +828,16 @@
   .rounded-md {
     border-radius: var(--radius-md);
   }
+  .rounded-xl {
+    border-radius: var(--radius-xl);
+  }
   .border {
     border-style: var(--tw-border-style);
     border-width: 1px;
+  }
+  .border-2 {
+    border-style: var(--tw-border-style);
+    border-width: 2px;
   }
   .border-t-2 {
     border-top-style: var(--tw-border-style);
@@ -821,6 +858,10 @@
   .border-b-4 {
     border-bottom-style: var(--tw-border-style);
     border-bottom-width: 4px;
+  }
+  .border-none {
+    --tw-border-style: none;
+    border-style: none;
   }
   .border-gray-600 {
     border-color: var(--color-gray-600);
@@ -846,8 +887,14 @@
   .bg-blue-500 {
     background-color: var(--color-blue-500);
   }
+  .bg-gray-500\/20 {
+    background-color: color-mix(in oklab, var(--color-gray-500) 20%, transparent);
+  }
   .bg-gray-500\/90 {
     background-color: color-mix(in oklab, var(--color-gray-500) 90%, transparent);
+  }
+  .bg-gray-600 {
+    background-color: var(--color-gray-600);
   }
   .bg-gray-700 {
     background-color: var(--color-gray-700);
@@ -864,6 +911,9 @@
   .bg-gray-800\/70 {
     background-color: color-mix(in oklab, var(--color-gray-800) 70%, transparent);
   }
+  .bg-green-500\/20 {
+    background-color: color-mix(in oklab, var(--color-green-500) 20%, transparent);
+  }
   .bg-green-500\/90 {
     background-color: color-mix(in oklab, var(--color-green-500) 90%, transparent);
   }
@@ -872,6 +922,9 @@
   }
   .bg-indigo-500\/20 {
     background-color: color-mix(in oklab, var(--color-indigo-500) 20%, transparent);
+  }
+  .bg-indigo-600 {
+    background-color: var(--color-indigo-600);
   }
   .bg-purple-500\/20 {
     background-color: color-mix(in oklab, var(--color-purple-500) 20%, transparent);
@@ -884,6 +937,9 @@
   }
   .bg-red-500 {
     background-color: var(--color-red-500);
+  }
+  .bg-red-500\/20 {
+    background-color: color-mix(in oklab, var(--color-red-500) 20%, transparent);
   }
   .bg-yellow-500\/90 {
     background-color: color-mix(in oklab, var(--color-yellow-500) 90%, transparent);
@@ -961,6 +1017,9 @@
   .px-4 {
     padding-inline: calc(var(--spacing) * 4);
   }
+  .px-6 {
+    padding-inline: calc(var(--spacing) * 6);
+  }
   .py-1 {
     padding-block: calc(var(--spacing) * 1);
   }
@@ -981,6 +1040,9 @@
   }
   .text-center {
     text-align: center;
+  }
+  .text-right {
+    text-align: right;
   }
   .text-2xl {
     font-size: var(--text-2xl);
@@ -1037,8 +1099,8 @@
   .text-gray-800 {
     color: var(--color-gray-800);
   }
-  .text-green-500 {
-    color: var(--color-green-500);
+  .text-green-400 {
+    color: var(--color-green-400);
   }
   .text-indigo-200 {
     color: var(--color-indigo-200);
@@ -1051,6 +1113,9 @@
   }
   .text-indigo-500 {
     color: var(--color-indigo-500);
+  }
+  .text-red-300 {
+    color: var(--color-red-300);
   }
   .text-red-400 {
     color: var(--color-red-400);
@@ -1091,6 +1156,10 @@
   }
   .shadow-sm {
     --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .shadow-xl {
+    --tw-shadow: 0 20px 25px -5px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 8px 10px -6px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
   }
   .blur-3xl {
@@ -1170,6 +1239,13 @@
       }
     }
   }
+  .hover\:bg-blue-600 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-blue-600);
+      }
+    }
+  }
   .hover\:bg-blue-700 {
     &:hover {
       @media (hover: hover) {
@@ -1188,6 +1264,13 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-indigo-600);
+      }
+    }
+  }
+  .hover\:bg-indigo-700 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-indigo-700);
       }
     }
   }
@@ -1228,10 +1311,24 @@
       }
     }
   }
+  .hover\:text-indigo-300 {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-indigo-300);
+      }
+    }
+  }
   .hover\:text-indigo-400 {
     &:hover {
       @media (hover: hover) {
         color: var(--color-indigo-400);
+      }
+    }
+  }
+  .hover\:text-red-300 {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-red-300);
       }
     }
   }
@@ -1320,6 +1417,11 @@
   .sm\:px-6 {
     @media (width >= 40rem) {
       padding-inline: calc(var(--spacing) * 6);
+    }
+  }
+  .md\:grid-cols-2 {
+    @media (width >= 48rem) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
   .md\:grid-cols-3 {
