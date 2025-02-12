@@ -52,6 +52,16 @@ export const getClientProfile = asyncHandler(async (req, res) => {
   res.json(profile);
 });
 
+export const getFreelancerProfileByUserId = asyncHandler(async (req, res) => {
+  // Instead of using req.user._id, we use the provided freelancer id from the URL
+  const profile = await FreelancerProfile.findOne({ user: req.params.id }).lean();
+  if (!profile) {
+    throw new ApiError(404, 'Freelancer profile not found');
+  }
+  res.json(profile);
+});
+
+
 export const getFreelancerProfile = asyncHandler(async (req, res) => {
   const profile = await FreelancerProfile.findOne({ user: req.user._id }).lean();
   if (!profile) {

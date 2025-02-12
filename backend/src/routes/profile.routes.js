@@ -6,7 +6,8 @@ import {
   createOrUpdateFreelancerProfile,
   getClientProfile,
   createOrUpdateClientProfile,
-  getFreelancerProfileById
+  getFreelancerProfileById,
+  getFreelancerProfileByUserId
 } from '../controllers/profile.controller.js';
 
 const router = express.Router();
@@ -17,7 +18,8 @@ router.use(protect);
 // Freelancer profile routes
 router.get('/freelancer', getFreelancerProfile);
 router.post('/freelancer', createOrUpdateFreelancerProfile);
-router.get('/freelancer-profile/:id', getFreelancerProfileById); 
+router.get('/freelancer-message/:id', getFreelancerProfileById); 
+router.get('/freelancer/:id', getFreelancerProfileByUserId);
 
 // Client profile routes
 router.get('/client', getClientProfile);

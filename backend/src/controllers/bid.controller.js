@@ -1,3 +1,4 @@
+// src/controllers/bid.controller.js
 import asyncHandler from '../utils/asyncHandler.js';
 import { Bid } from '../models/Bid.model.js';
 import { Project } from '../models/Project.model.js';
@@ -10,74 +11,106 @@ import { io } from '../app.js';
 export const createBid = asyncHandler(async (req, res) => {
   const { projectId, bidAmount, message } = req.body;
 
-  // Validate project and status
-  const project = await Project.findById(projectId);
-  if (!project || project.status !== 'OPEN') {
-    throw new ApiError(400, 'Project not available for bidding');
-  }
+  // Validate project existence and status
+  const project = await Project.findById(projectId).select('status client').lean();
+  if (!project) throw new ApiError(404, 'Project not found');
+  if (project.status !== 'OPEN') throw new ApiError(400, 'Project not accepting bids');
 
-  // Prevent project owner from bidding
+  // Validate user authorization
   if (project.client.toString() === req.user._id.toString()) {
-    throw new ApiError(400, 'Cannot bid on your own project');
+    throw new ApiError(403, 'Project owners cannot bid on their own projects');
   }
 
   // Check for existing bids
-  const existingBid = await Bid.findOne({
+  const existingBid = await Bid.exists({
     project: projectId,
     freelancer: req.user._id
   });
+  if (existingBid) throw new ApiError(409, 'You already have an active bid for this project');
 
-  if (existingBid) {
-    throw new ApiError(400, 'You already have an active bid for this project');
-  }
-
-  // Create the bid
+  // Create and populate bid
   const bid = await Bid.create({
     project: projectId,
     freelancer: req.user._id,
     bidAmount,
-    message
+    message,
+    status: 'PENDING'
   });
 
-  // Respond with populated data
   const populatedBid = await Bid.findById(bid._id)
-  .populate('freelancer', 'username _id')
-  .lean();
+    .populate({
+      path: 'freelancer',
+      select: 'username _id'
+    })
+    .lean();
 
-// Ensure required fields exist
-const serializedBid = {
-  ...populatedBid,
-  _id: populatedBid._id.toString(),
-  project: populatedBid.project.toString(),
-  bidAmount: populatedBid.bidAmount, // Ensure this exists
-  freelancer: {
-    _id: populatedBid.freelancer._id.toString(),
-    username: populatedBid.freelancer.username
-  }
-};
+  // Structured response with normalized IDs
+  const responseBid = {
+    ...populatedBid,
+    _id: populatedBid._id.toString(),
+    project: {
+      _id: projectId.toString(),
+      client: project.client.toString() // Critical for client validation
+    },
+    freelancer: {
+      _id: populatedBid.freelancer._id.toString(),
+      username: populatedBid.freelancer.username
+    },
+    createdAt: populatedBid.createdAt.toISOString(),
+    updatedAt: populatedBid.updatedAt.toISOString()
+  };
 
-io.emit('newBid', serializedBid);
-  res.status(201).json(serializedBid);
+  // Real-time update
+  io.emit('newBid', responseBid);
+  res.status(201).json(responseBid);
 });
-
 // ==================================
 // GET PROJECT BIDS
 // ==================================
 export const getProjectBids = asyncHandler(async (req, res) => {
   const { projectId } = req.params;
 
-  // Check if project exists
-  const project = await Project.findById(projectId);
+  // Validate project existence
+  const project = await Project.findById(projectId).select('client status').lean();
   if (!project) throw new ApiError(404, 'Project not found');
 
-  // Fetch and populate bids
+  // Determine if the user is authorized:
+  // - Either they are the client
+  // - Or they are a freelancer who has bid on the project
+  const userId = req.user._id.toString();
+  const isClient = project.client.toString() === userId;
+  const isFreelancer = req.user.role === 'freelancer';
+
+  if (!isClient && !isFreelancer) {
+    throw new ApiError(403, 'Unauthorized to view project bids');
+  }
+
+  // Fetch and process bids
   const bids = await Bid.find({ project: projectId })
-    .populate('freelancer', 'username rating')
-    .populate('project', 'title status')
+    .populate({
+      path: 'freelancer',
+      select: 'username _id'
+    })
     .sort({ createdAt: -1 })
     .lean();
 
-  res.json(bids);
+  // Normalize bid structure
+  const processedBids = bids.map(bid => ({
+    ...bid,
+    _id: bid._id.toString(),
+    project: {
+      _id: projectId.toString(),
+      client: project.client.toString() // Essential for frontend checks
+    },
+    freelancer: {
+      _id: bid.freelancer._id.toString(),
+      username: bid.freelancer.username
+    },
+    createdAt: bid.createdAt.toISOString(),
+    updatedAt: bid.updatedAt.toISOString()
+  }));
+
+  res.json(processedBids);
 });
 
 // ==================================
@@ -85,8 +118,8 @@ export const getProjectBids = asyncHandler(async (req, res) => {
 // ==================================
 export const getBidById = asyncHandler(async (req, res) => {
   const bid = await Bid.findById(req.params.bidId)
-    .populate('freelancer', 'username rating')
-    .populate('project', 'title status')
+    .populate('freelancer', 'username _id role')
+    .populate('project', 'title status client')
     .lean();
 
   if (!bid) throw new ApiError(404, 'Bid not found');
@@ -118,7 +151,7 @@ export const updateBid = asyncHandler(async (req, res) => {
   // io.emit('bidUpdate', bid);
 
   const populatedBid = await Bid.findById(bid._id)
-  .populate('freelancer', 'username rating')
+  .populate('freelancer', 'username _id')
   .exec();
 
   io.emit('bidUpdate', populatedBid.toObject());

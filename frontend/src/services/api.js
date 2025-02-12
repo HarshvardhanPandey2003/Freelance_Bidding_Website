@@ -8,14 +8,13 @@ export const api = axios.create({
   withCredentials: true
 });
 
-// export const projectService = {
-//   createProject: (data) => api.post('/api/projects', data),
-//   getClientProjects: () => api.get('/api/projects')
-// // };
-// Instead of this you can write the 2nd one 
-// const { data } = await api.get('/api/projects');
-// const { data } = await projectService.getClientProjects();
-// Add response interceptor for error handling
+// Payment initiation function
+export const initiatePayment = async ({ projectId, freelancerId, amount }) => {
+  console.log({ projectId, freelancerId, amount });
+  const response = await api.post('/api/payments/initiate', { projectId, freelancerId, amount });
+  return response.data;
+};
+
 api.interceptors.response.use(
   response => response,
   error => {

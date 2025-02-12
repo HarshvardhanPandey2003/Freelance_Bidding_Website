@@ -1,3 +1,4 @@
+//frontend/src/pages/ClientsProject.jsx
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -21,14 +22,17 @@ const ClientProject = () => {
       try {
         const [projectRes, bidsRes] = await Promise.all([
           api.get(`/api/projects/${id}`),
-          api.get(`/api/bids/project/${id}`)
+          api.get(`/api/bids/project/${id}`)//This API gives all the bids in a speciic project 
         ]);
 
         // Normalize bids data
         const normalizedBids = bidsRes.data.map(bid => ({
           ...bid,
           _id: bid._id?.toString(),
-          project: bid.project?.toString(),
+          project: {
+            _id: bid.project?._id?.toString(),
+            client: bid.project?.client?.toString() // Preserve client as a string inside an object.
+          },
           bidAmount: bid.bidAmount || 0,
           freelancer: {
             ...bid.freelancer,
@@ -55,14 +59,17 @@ const ClientProject = () => {
 
     const handleBidEvent = (type, payload) => {
       if (!payload?.project || payload.project.toString() !== id) return;
-
+    
       setLocalBids(prev => {
         switch (type) {
           case 'new':
             return [...prev, {
               ...payload,
               _id: payload._id?.toString(),
-              project: payload.project?.toString(),
+              project: {
+                _id: payload.project?._id?.toString(),
+                client: payload.project?.client?.toString() // preserve as object
+              },
               bidAmount: payload.bidAmount || 0,
               freelancer: {
                 ...payload.freelancer,
@@ -75,7 +82,10 @@ const ClientProject = () => {
               bid._id === payload._id?.toString() ? {
                 ...payload,
                 _id: payload._id?.toString(),
-                project: payload.project?.toString(),
+                project: {
+                  _id: payload.project?._id?.toString(),
+                  client: payload.project?.client?.toString()
+                },
                 bidAmount: payload.bidAmount || 0,
                 freelancer: {
                   ...payload.freelancer,
@@ -91,6 +101,7 @@ const ClientProject = () => {
         }
       });
     };
+    
 
     socket.on('newBid', (bid) => handleBidEvent('new', bid));
     socket.on('bidUpdate', (bid) => handleBidEvent('update', bid));
@@ -185,21 +196,22 @@ const ClientProject = () => {
           ) : (
             <div className="space-y-4">
               {localBids.map((bid) => (
-                <div key={bid._id} className="bg-gray-700/50 p-4 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-indigo-400 font-medium">
+                <div 
+                    key={bid._id} 
+                    className="bg-gray-700/50 p-4 rounded-lg cursor-pointer"
+                    onClick={() => navigate(`/confirmbid/${project._id}/${bid.freelancer._id}/${bid._id}`)}
+                  >
+                    {/* bid content */}
+                    <p className="text-indigo-400 font-medium">
                       ${bid.bidAmount?.toFixed(2) || '0.00'}
-                      </p>
-                      {bid.message && (
-                        <p className="text-gray-300 mt-1">{bid.message}</p>
-                      )}
-                      <p className="text-sm text-gray-400 mt-2">
-                        By {bid.freelancer.username}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                    </p>
+                    {bid.message && (
+                      <p className="text-gray-300 mt-1">{bid.message}</p>
+                    )}
+                    <p className="text-sm text-gray-400 mt-2">
+                      By {bid.freelancer.username}
+                </p>
+              </div>
               ))}
             </div>
           )}

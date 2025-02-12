@@ -2,15 +2,70 @@
   import asyncHandler from '../utils/asyncHandler.js';
   import { Project } from '../models/Project.model.js';
   
-   export const staticSkills = [
+  export const staticSkills = [
     { name: 'JavaScript', category: 'Frontend' },
     { name: 'Python', category: 'Backend' },
     { name: 'React', category: 'Frontend' },
     { name: 'Node.js', category: 'Backend' },
     { name: 'MongoDB', category: 'Database' },
     { name: 'Docker', category: 'DevOps' },
-    { name: 'TensorFlow', category: 'AI/ML' }
-  ];
+    { name: 'TensorFlow', category: 'AI/ML' },
+
+    // Web Dev
+    { name: 'HTML', category: 'Frontend' },
+    { name: 'CSS', category: 'Frontend' },
+    { name: 'Angular', category: 'Frontend' },
+    { name: 'Vue.js', category: 'Frontend' },
+    { name: 'TypeScript', category: 'Frontend' },
+    { name: 'Java', category: 'Backend' },
+    { name: 'Spring Boot', category: 'Backend' },
+    { name: 'PHP', category: 'Backend' },
+    { name: 'Ruby on Rails', category: 'Backend' },
+    { name: 'SQL', category: 'Database' },
+    { name: 'PostgreSQL', category: 'Database' },
+    { name: 'MySQL', category: 'Database' },
+    { name: 'Redis', category: 'Database' },
+
+    // Mobile Dev
+    { name: 'Flutter', category: 'App' },
+    { name: 'Swift', category: 'App' },
+    { name: 'Kotlin', category: 'App' },
+    { name : 'React Native', category: 'App' },
+    
+    // Cloud
+    { name: 'AWS', category: 'Cloud' },
+    { name: 'Azure', category: 'Cloud' },
+    { name: 'Google Cloud Platform (GCP)', category: 'Cloud' },
+    { name: 'Kubernetes', category: 'Cloud' },
+    { name: 'Serverless', category: 'Cloud' },
+    { name: 'Terraform', category: 'Cloud' },
+    { name: 'CI/CD', category: 'DevOps' }, // Moved to DevOps as it's often related
+    { name: 'Git', category: 'DevOps' },      // Moved to DevOps as it's often related
+    { name: 'Ansible', category: 'DevOps' },   // Moved to DevOps as it's often related
+
+
+    // AI/ML
+    { name: 'PyTorch', category: 'AI/ML' },
+    { name: 'Scikit-learn', category: 'AI/ML' },
+    { name: 'Keras', category: 'AI/ML' },
+    { name: 'Natural Language Processing (NLP)', category: 'AI/ML' },
+    { name: 'Computer Vision', category: 'AI/ML' },
+    { name: 'Machine Learning', category: 'AI/ML' },
+    { name: 'Deep Learning', category: 'AI/ML' },
+    { name: 'Data Science', category: 'AI/ML' },
+    { name: 'Big Data', category: 'AI/ML' }, // Often related to AI/ML
+
+
+    // Blockchain
+    { name: 'Ethereum', category: 'Blockchain' },
+    { name: 'Solidity', category: 'Blockchain' },
+    { name: 'Hyperledger Fabric', category: 'Blockchain' },
+    { name: 'Blockchain Development', category: 'Blockchain' },
+    { name: 'Smart Contracts', category: 'Blockchain' },
+    { name: 'Web3', category: 'Blockchain' },
+    { name: 'Cryptography', category: 'Blockchain' }, // Often related to Blockchain
+
+];
   // Get all available skills
   export const getSkills = (req, res) => {
     res.json(staticSkills);
@@ -147,20 +202,17 @@
 export const getOpenProjects = asyncHandler(async (req, res) => {
   // Extract query parameters for filtering and pagination
   const { minBudget, maxBudget, deadline, skills, page, limit } = req.query;
-
   // Main Conditions: show projects that are OPEN and not deleted
   const filter = { 
     status: 'OPEN',
     isDeleted: { $ne: true }  // Add this line to exclude deleted projects
   };
-
   // Add budget filtering if provided
   if (minBudget || maxBudget) {
     filter.budget = {};
     if (minBudget) filter.budget.$gte = Number(minBudget);
     if (maxBudget) filter.budget.$lte = Number(maxBudget);
   }
-
   // Deadline filtering: projects with deadlines on or before the provided date
   if (deadline) {
     const parsedDeadline = new Date(deadline);
@@ -168,14 +220,12 @@ export const getOpenProjects = asyncHandler(async (req, res) => {
       filter.deadline = { $lte: parsedDeadline };
     }
   }
-
   // Skills filtering: projects that include at least one of the specified skills
   if (skills) {
     // Convert skills to an array (if a comma-separated string is provided)
     const skillsArr = Array.isArray(skills) ? skills : skills.split(',').map(s => s.trim());
     filter.skills = { $in: skillsArr };
   }
-
   // Pagination: default page 1 and limit 10 if not provided
   const pageNum = parseInt(page, 10) || 1;
   const limitNum = parseInt(limit, 10) || 10;

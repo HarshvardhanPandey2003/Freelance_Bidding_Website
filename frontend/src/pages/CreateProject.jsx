@@ -102,10 +102,9 @@ export const CreateProject = () => {
   const removeSkill = (skillName) => {
     setFormData(prev => ({
       ...prev,
-      skills: prev.skills.filter(skill => skill.name !== skillName),
+      skills: prev.skills.filter(skill => skill !== skillName),
     }));
   };
-
   const filteredSkills = availableSkills.filter(skill =>
     skill.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -202,10 +201,10 @@ export const CreateProject = () => {
                 <button
                   type="button"
                   onClick={() => removeSkill(skillName)}
-                  className="ml-2 hover:text-indigo-100"
-                >
+                  className="ml-5 hover:text-indigo-500 text-lg font-bold" // Increased size and boldness
+              >
                   ×
-                </button>
+              </button>
               </div>
             ))}
             </div>

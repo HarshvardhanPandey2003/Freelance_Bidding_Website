@@ -39,6 +39,7 @@ export const CreateFreelancerProfile = () => {
   };
 
   return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
     <div className="min-h-screen">
       <div className="max-w-md mx-auto px-4 sm:px-0">
         <div className="mt-12 flex flex-col items-center animate-fade-in-up">
@@ -126,5 +127,6 @@ export const CreateFreelancerProfile = () => {
         </div>
       </div>
     </div>
+  </div>
   );
 };

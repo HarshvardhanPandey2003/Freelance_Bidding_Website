@@ -36,7 +36,7 @@ export const Navbar = () => {
   const handleLogout = async () => {
     try {
       await api.post('/api/auth/logout');
-      await checkAuth(); // Wait for auth check to complete
+      // Wait for auth check to complete
       navigate('/login');
     } catch (err) {
       console.error('Logout error:', err);
@@ -83,6 +83,13 @@ export const Navbar = () => {
                     Create Profile
                   </Link>
                 )}
+                {/* Added Payments Button */}
+                <Link
+                  to="/payments"
+                  className="bg-green-400 hover:bg-green-500 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm hover:shadow-md active:scale-95"
+                >
+                  Payments
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm hover:shadow-md active:scale-95"

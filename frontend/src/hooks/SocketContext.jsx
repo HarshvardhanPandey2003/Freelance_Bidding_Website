@@ -4,7 +4,7 @@ import React, { createContext, useContext } from 'react';
 import socket from '../services/socket';
 
 const SocketContext = createContext();
-
+//Connects to the backend’s websocket server with credentials.
 export const SocketProvider = ({ children }) => {
   return (
     <SocketContext.Provider value={{ socket }}>
