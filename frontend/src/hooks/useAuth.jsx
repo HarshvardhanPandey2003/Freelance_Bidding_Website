@@ -14,33 +14,35 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+// frontend/src/hooks/useAuth.jsx
 export const useAuth = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const checkAuth = async () => {
+    console.log('useAuth: Fetching user data...');
+    try {
+      const response = await api.get('/api/auth/me');
+      const userData = response.data;
+      // Normalize user data format
+      setUser({
+        _id: userData.id || userData._id,
+        ...userData
+      });
+      return userData;
+    } catch (error) {
+      console.error('useAuth: Failed to fetch user data:', error);
+      setUser(null);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchUser = async () => {
-      console.log('useAuth: Fetching user data...');
-      try {
-        const response = await api.get('/api/auth/me');
-        const userData = response.data; 
-        // Normalize: if userData.id exists, assign it to _id for consistency
-        if (userData.id && !userData._id) {
-          userData._id = userData.id;
-        }
-        console.log('useAuth: Fetched user:', userData);
-        setUser(userData);
-      } catch (error) {
-        console.error('useAuth: Failed to fetch user data:', );
-      } finally {
-        setLoading(false);
-      }
-    };
+    checkAuth();
+  }, []); // Add dependencies if needed
 
-    fetchUser();
-  }, []);
-
-  return { user, loading };
+  return { user, loading, checkAuth }; // Expose checkAuth for manual refreshes
 };
-
 export const useAuthContext = () => useContext(AuthContext);

@@ -12,7 +12,7 @@ export const FreelancerProfileView = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await api.get(`/api/profile/freelancer-profile/${id}`);
+        const response = await api.get(`/api/profile/freelancer/${id}`);
         setProfile(response.data);
       } catch (error) {
         console.error('Failed to fetch profile:', error);

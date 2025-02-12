@@ -11,8 +11,16 @@ export const api = axios.create({
 // Payment initiation function
 export const initiatePayment = async ({ projectId, freelancerId, amount }) => {
   console.log({ projectId, freelancerId, amount });
-  const response = await api.post('/api/payments/initiate', { projectId, freelancerId, amount });
-  return response.data;
+  const numericAmount = Number(amount);
+  if (isNaN(numericAmount) || numericAmount <= 0) {
+    throw new Error('Invalid amount value');
+  }
+
+  const response = await api.post('/api/payments/initiate', {
+    projectId,
+    freelancerId,
+    amount: numericAmount
+  });  return response.data;
 };
 
 api.interceptors.response.use(
