@@ -1,3 +1,4 @@
+//frontedn/src/pages/FreelancerProfile.jsx
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';

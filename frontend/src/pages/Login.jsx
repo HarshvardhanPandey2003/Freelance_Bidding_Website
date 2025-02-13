@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { Navbar } from '../components/Navbar';
 import '../output.css';
+import { useAuth } from '../hooks/useAuth'; // use our consumer hook
+
 
 export const Login = () => {
   // Here we define the state with variables and functions
@@ -13,11 +15,14 @@ export const Login = () => {
   });
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { checkAuth } = useAuth(); // get checkAuth from context
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await api.post('/api/auth/login', formData);
+      // Refresh auth state by calling checkAuth so the provider knows the user is logged in
+      await checkAuth();
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Login failed');

@@ -1,3 +1,4 @@
+// frontend/src/pages/Dashboard.jsx
 import { useAuth } from '../hooks/useAuth';
 import { ClientDashboard } from './ClientDashboard';
 import { FreelancerDashboard } from './FreelancerDashboard';
