@@ -37,6 +37,7 @@ export const Navbar = () => {
     try {
       await api.post('/api/auth/logout');
       // Wait for auth check to complete
+      await checkAuth();
       navigate('/login');
     } catch (err) {
       console.error('Logout error:', err);
