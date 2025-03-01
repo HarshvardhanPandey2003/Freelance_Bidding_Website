@@ -2,15 +2,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
-import { useAuth } from '../hooks/useAuth';
 import { api } from '../services/api';
 import '../output.css';
 
 export const CreateProject = () => {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
-  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -86,7 +83,7 @@ export const CreateProject = () => {
 
   // This is an event handler that runs when the user selects a skill from the dropdown.
   //This is a check to prevent duplicate skills from being added.
-   //The some() method checks if at least one element in the formData.skills array satisfies a condition.
+  //The some() method checks if at least one element in the formData.skills array satisfies a condition.
   const handleSkillSelect = (skill) => {
     if (!formData.skills.some((s) => s.name === skill.name)) {
       setFormData(prev => ({

@@ -5,6 +5,11 @@ import { api } from '../services/api';
 import { useEffect, useState } from 'react';
 import '../output.css';
 
+// For example, if a user logs in:
+
+// Initially, Navbar mounts with user as null.
+// Later, AuthProvider finishes fetching the auth state, so user becomes defined.
+// Because the user value has changed, the useEffect in Navbar fires, calling fetchProfile to determine if the user’s profile exists.
 export const Navbar = () => {
   const { user, checkAuth } = useAuth();
   const navigate = useNavigate();

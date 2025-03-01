@@ -8,7 +8,8 @@ import {
   updateProject,
   deleteProject,
   getOpenProjects
-} from '../controllers/project.controller.js';
+} 
+from '../controllers/project.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { requireRole } from '../middleware/role.middleware.js';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -23,8 +24,7 @@ router.use(protect);
 router.get('/skills',requireRole('client'), asyncHandler(getSkills)); 
   router.post('/', requireRole('client'), validateSkills, createProject);
 router.get('/', requireRole('client'), getClientProjects);
-
-// This route is added outside of the client-only middleware group.
+//Get all open projects only for freelancers 
 router.get('/open', requireRole('freelancer'), cacheProjects, asyncHandler(getOpenProjects));
   
 // Project CRUD routes

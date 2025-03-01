@@ -4,8 +4,10 @@ import { api } from '../services/api';
 
 const AuthContext = createContext();
 
-// Internal hook: used only by the provider.
-const useProvideAuth = () => {
+// AuthProvider creates the AuthContext and provides user, loading, and checkAuth() to all child components (like Navbar).
+// This way, any component inside App can use useAuth() to access user or call checkAuth()
+//  without needing to manually pass data down through props.const 
+ useProvideAuth = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,9 +41,10 @@ const useProvideAuth = () => {
 export const AuthProvider = ({ children }) => {
   const auth = useProvideAuth();
   const memoizedAuth = useMemo(() => auth, [auth.user, auth.loading]);
+//By using useMemo, we ensure that auth is only updated when user or loading
+//  actually changes, preventing unnecessary re-renders.otherwise it will rerender everytime we refresh it 
 
-  // Render a fallback UI until authentication is finished
-  if (memoizedAuth.loading) {
+if (memoizedAuth.loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <span className="text-white text-lg">Loading...</span>

@@ -54,17 +54,6 @@ export const Bids = ({ bids, onDelete }) => {
                 )}
               </div>
               {console.log(`Rendering Select button for bid ${bid.project.client}`)}
-              {/* Only show Select button for clients, positioned at bottom right */}
-              {user?._id === bid.project.client && (
-                <>
-                <button
-                  onClick={() => navigate(`/`)}
-                  className="absolute bottom-2 right-2 text-teal-400 hover:text-teal-300 text-sm"
-                >
-                  Select
-                </button>
-                </>
-              )}
             </div>
           ))}
         </div>

@@ -9,7 +9,6 @@ import { useSocket } from '../hooks/SocketContext';
 const ClientProject = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const { socket } = useSocket();
   const [project, setProject] = useState(null);
   const [localBids, setLocalBids] = useState([]);
