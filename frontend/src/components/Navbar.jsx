@@ -5,11 +5,6 @@ import { api } from '../services/api';
 import { useEffect, useState } from 'react';
 import '../output.css';
 
-// For example, if a user logs in:
-
-// Initially, Navbar mounts with user as null.
-// Later, AuthProvider finishes fetching the auth state, so user becomes defined.
-// Because the user value has changed, the useEffect in Navbar fires, calling fetchProfile to determine if the user’s profile exists.
 export const Navbar = () => {
   const { user, checkAuth } = useAuth();
   const navigate = useNavigate();
@@ -41,7 +36,6 @@ export const Navbar = () => {
   const handleLogout = async () => {
     try {
       await api.post('/api/auth/logout');
-      // Wait for auth check to complete
       await checkAuth();
       navigate('/login');
     } catch (err) {
@@ -61,8 +55,8 @@ export const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <Link 
-              to={user ? "/dashboard" : "/"}
+            <Link
+              to={user ? '/dashboard' : '/'}
               onClick={handleBrandClick}
               className="text-white font-bold text-xl tracking-wide"
             >
@@ -76,25 +70,40 @@ export const Navbar = () => {
                   <span>Loading profile...</span>
                 ) : profileExists ? (
                   <Link
-                    to={user.role === 'freelancer' ? '/freelancer-profile' : '/client-profile'}
+                    to={
+                      user.role === 'freelancer'
+                        ? '/freelancer-profile'
+                        : '/client-profile'
+                    }
                     className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm hover:shadow-md active:scale-95"
                   >
                     Profile
                   </Link>
                 ) : (
                   <Link
-                    to={user.role === 'freelancer' ? '/create-freelancer-profile' : '/create-client-profile'}
+                    to={
+                      user.role === 'freelancer'
+                        ? '/create-freelancer-profile'
+                        : '/create-client-profile'
+                    }
                     className="bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm hover:shadow-md active:scale-95"
                   >
                     Create Profile
                   </Link>
                 )}
-                {/* Added Payments Button */}
+                {/* Payments Button */}
                 <Link
                   to="/payments"
                   className="bg-green-400 hover:bg-green-500 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm hover:shadow-md active:scale-95"
                 >
                   Payments
+                </Link>
+                {/* Chat Button */}
+                <Link
+                  to="/chat"
+                  className="bg-violet-500 hover:bg-violet-600 text-white font-medium py-2 px-4 rounded-md transition-colors shadow-sm hover:shadow-md active:scale-95"
+                >
+                  Chat
                 </Link>
                 <button
                   onClick={handleLogout}

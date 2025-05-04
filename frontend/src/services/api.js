@@ -22,7 +22,17 @@ export const initiatePayment = async ({ projectId, freelancerId, amount }) => {
     amount: numericAmount
   });  return response.data;
 };
+// New helper: Fetch chat connections for the logged-in user
+export const getChatConnections = async () => {
+  const response = await api.get('/api/chats/connections');
+  return response.data;
+};
 
+// New helper: Fetch chat history with a specific partner
+export const getChatHistory = async (partnerId) => {
+  const response = await api.get(`/api/chats/history/${partnerId}`);
+  return response.data;
+};
 api.interceptors.response.use(
   response => response,
   error => {

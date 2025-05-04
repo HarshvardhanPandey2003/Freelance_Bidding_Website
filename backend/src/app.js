@@ -10,50 +10,44 @@ import projectRouter from './routes/project.routes.js';
 import { connectDB } from './config/db.js';
 import bidRouter from './routes/bid.routes.js';
 import profileRouter from './routes/profile.routes.js';
-import paymentRouter from './routes/payment.routes.js'; // Import
-
+import paymentRouter from './routes/payment.routes.js';
+import chatRoutes from './routes/chat.routes.js';
+import { initializeSocket } from './socket/init.js';
 
 const app = express();
 const httpServer = createServer(app);
 
-// Initialize socket.io
+// Initialize Socket.io with CORS configuration
 const io = new SocketIOServer(httpServer, {
-  // Configured with CORS options. It specifically allows connections from http://localhost:5173 
   cors: {
-    origin: 'http://localhost:5173', // Allow requests from this URL
-    methods: ['GET', 'POST','DELETE','PUT'],
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'DELETE', 'PUT'],
     credentials: true,
   },
 });
 
-// Export the io instance
+// Initialize socket with authentication and event handlers
+initializeSocket(io);
+
+// Export the io instance for usage in other modules if needed
 export { io };
 
-// Sets up event listeners to handle new connections, disconnections, and a custom event (newBid → bidUpdate).
-io.on('connection', (socket) => {
-  console.log('New client connected');
-
-  socket.on('disconnect', () => {
-    console.log('Client disconnected');
-  });
-
-  socket.on('newBid', (data) => {
-    io.emit('bidUpdate', data); // Emit to all connected clients
-  });
-});
-
+// Apply global middleware
 app.use(cookieParser());
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
 
-//Routes
+// Register API routes
 app.use('/api/auth', authRouter);
 app.use('/api/projects', projectRouter);
 app.use('/api/bids', bidRouter);
 app.use('/api/profile', profileRouter);
-app.use('/api/payments', paymentRouter); // Payment endpoints
+app.use('/api/payments', paymentRouter);
+app.use('/api/chats', chatRoutes);
 
-// Connect DB and start server
+// Connect to the database then start the HTTP server
 connectDB().then(() => {
-  httpServer.listen(5000, () => console.log('Server running on port 5000'));
-}); 
+  httpServer.listen(5000, () =>
+    console.log('Server running on port 5000')
+  );
+});
