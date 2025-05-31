@@ -14,23 +14,6 @@ redisClient.on('error', (err) => console.error('Redis Client Error:', err));
 
 export default redisClient;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // import { createClient } from 'redis';
 
 // let redisClient;

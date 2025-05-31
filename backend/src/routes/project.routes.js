@@ -22,7 +22,7 @@ router.use(protect);
 
 // Skill-related routes
 router.get('/skills',requireRole('client'), asyncHandler(getSkills)); 
-  router.post('/', requireRole('client'), validateSkills, createProject);
+router.post('/', requireRole('client'), validateSkills, createProject);
 router.get('/', requireRole('client'), getClientProjects);
 //Get all open projects only for freelancers 
 router.get('/open', requireRole('freelancer'), cacheProjects, asyncHandler(getOpenProjects));

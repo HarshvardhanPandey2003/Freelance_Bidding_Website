@@ -42,7 +42,7 @@ export const FreelancerDashboard = () => {
   useEffect(() => {
     const intervalId = setInterval(() => {
       refreshProjects();
-    }, 30000); // Refresh every 30 seconds
+    }, 3000); // Refresh every 30 seconds
 
     return () => clearInterval(intervalId);
   }, [refreshProjects]);
