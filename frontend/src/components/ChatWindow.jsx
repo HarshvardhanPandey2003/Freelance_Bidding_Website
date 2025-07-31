@@ -11,7 +11,6 @@ const ChatWindow = ({ currentUser, partner }) => {
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
-  // Auto-scroll to the bottom on new messages.
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -22,7 +21,11 @@ const ChatWindow = ({ currentUser, partner }) => {
 
     setIsConnecting(true);
     setError(null);
-
+  
+    // This emit is used to start the chat session with the partner by giving the partner's ID and joining the room.
+    // and fetching the chat history if available.
+    // In the backend they take the partner ID you've given and your id through socket.user and then combine it to create a unique room ID
+    // The server will respond with the room ID and any existing messages.
     socket.emit('startChat', { partnerId: partner.partnerId }, (res) => {
       setIsConnecting(false);
       if (res.error) {
@@ -33,17 +36,19 @@ const ChatWindow = ({ currentUser, partner }) => {
         setMessages(Array.isArray(res.messages) ? res.messages : []);
       }
     });
-
+// Here this function listens for incoming messages from the server after joining the chat room.
+// It updates the messages state with the new message received.
     const handleReceiveMessage = (data) => {
       setMessages((prev) => [...prev, data]);
     };
-
+    // Listen for incoming messages from the server.
     socket.on('receiveMessage', handleReceiveMessage);
 
     return () => {
+      // off means to stop listening for the event when the component unmounts. 
       socket.off('receiveMessage', handleReceiveMessage);
     };
-  }, [partner, socket]);
+  }, [partner, socket]);//Means render the effect when partner or socket changes.
 
   const handleSend = (e) => {
     e.preventDefault();

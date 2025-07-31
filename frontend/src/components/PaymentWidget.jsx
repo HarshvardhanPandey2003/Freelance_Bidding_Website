@@ -17,7 +17,8 @@ const PaymentWidget = ({ order, onSuccess, onError }) => {
         if (rzpRef.current && typeof rzpRef.current.close === 'function') {
           rzpRef.current.close();
         }
-        onSuccess(response);
+        onSuccess(response);// Now this response contains the payment details and we call it in ConfrimBid.jsx 
+        // as PaymentResponse which acts as a prop to handlePaymentSuccess
       },
       modal: {
         ondismiss: function () {
@@ -31,27 +32,39 @@ const PaymentWidget = ({ order, onSuccess, onError }) => {
     rzpRef.current.open();
   };
 
+  // useEffect runs when component mounts or order changes
   useEffect(() => {
+    // Only proceed if we have an order object
     if (order) {
+      // Check if Razorpay SDK is already loaded
       if (!window.Razorpay) {
+        // SDK not loaded yet, so load it dynamically
         const script = document.createElement('script');
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
         script.async = true;
+        
+        // Once script loads successfully, open checkout
         script.onload = openRazorpayCheckout;
+        
+        // Handle script loading errors
         script.onerror = () => onError('Razorpay SDK failed to load');
+        
+        // Add script to page to start loading
         document.body.appendChild(script);
       } else {
+        // SDK already loaded, directly open checkout
         openRazorpayCheckout();
       }
     }
 
-    // Optional: clean up by closing the modal on unmount
+    // CLEANUP FUNCTION: Runs when component unmounts
     return () => {
+      // Close any open Razorpay modal to prevent memory leaks
       if (rzpRef.current && typeof rzpRef.current.close === 'function') {
         rzpRef.current.close();
       }
     };
-  }, [order]);
+  }, [order]); // Dependency array - effect runs when 'order' changes
 
   return null;
 };

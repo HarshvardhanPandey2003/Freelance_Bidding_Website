@@ -6,7 +6,6 @@ import { Link, useNavigate } from 'react-router-dom';
 
 export const Bids = ({ bids, onDelete }) => {
   const { user, loading: authLoading } = useAuth(); // Use AuthProvider
-  // const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 //  console.log(`Bids component: user: ${user.data}, authLoading: ${authLoading}`);
   if (authLoading) return <div>Loading...</div>;

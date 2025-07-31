@@ -154,14 +154,14 @@ export const FreelanceProject = () => {
             <>
               {userBid ? (
                 <button
-                  onClick={() => navigate(`/edit-bid/${userBid._id}`)}
+                  onClick={() => navigate(`/edit-bid/${userBid._id}`)} // Using the URL of editing bid for navigation
                   className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg"
                 >
                   Edit Your Bid
                 </button>
               ) : (
                 <button
-                  onClick={() => navigate(`/create-bid/${id}`)}
+                  onClick={() => navigate(`/create-bid/${id}`)} // Using the URL of creating bid for navigation
                   className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg"
                 >
                   Place Bid

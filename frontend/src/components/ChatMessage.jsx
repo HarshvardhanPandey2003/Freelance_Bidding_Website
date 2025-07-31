@@ -1,7 +1,7 @@
 import React from 'react';
 
 const ChatMessage = ({ message, currentUserId }) => {
-  const isMine = message.sender === currentUserId;
+  const isMine = message.sender === currentUserId;//Checks if the current user is the sender of the message
   return (
     <div className={`mb-2 flex ${isMine ? 'justify-end' : 'justify-start'}`}>
       <div

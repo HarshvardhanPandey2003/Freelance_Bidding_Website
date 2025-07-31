@@ -34,7 +34,8 @@ export const UpdateBid = () => {
       }
     };
     fetchBid();
-  }, [bidId]);
+  }, [bidId]);//This means refetch the bid details whenever the bidId changes
+  // and if the bidId is not changing or [] is empty, it will only run once when the component mounts
 
   const handleChange = (e) => {
     setFormData({

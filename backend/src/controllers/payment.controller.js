@@ -26,7 +26,8 @@ export const initiatePayment = asyncHandler(async (req, res) => {
     receipt: `receipt_order_${Date.now()}`,
     payment_capture: 1, // auto-capture enabled
   };
-
+//Use Razorpay's inbuilt order creation using the Razorpay SDK
+// With the information as input in the options object
   const order = await razorpayInstance.orders.create(options);
 
   // Instead of creating a Payment record now, just return the order
@@ -41,7 +42,7 @@ export const initiatePayment = asyncHandler(async (req, res) => {
 // ==================================
 // File: backend/src/controllers/payment.controller.js
 export const confirmPayment = asyncHandler(async (req, res) => {
-  // Extract payment details from the request body
+  // Extract payment details from the request body this is called in ConfirmBid.jsx
   const { razorpayPaymentId, razorpayOrderId, razorpaySignature, paymentMethod, projectId, freelancerId, amount } = req.body;
 
   // Compute the expected signature using the key_secret.
@@ -75,7 +76,6 @@ export const confirmPayment = asyncHandler(async (req, res) => {
     project.status = 'IN_PROGRESS';
     await project.save();
   }
-
   // Emit a real-time event (if using Socket.io)
   io.emit('paymentUpdate', { paymentId: paymentRecord._id, status: 'COMPLETED' });
 

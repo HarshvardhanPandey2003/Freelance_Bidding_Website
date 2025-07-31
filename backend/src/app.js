@@ -20,6 +20,7 @@ const httpServer = createServer(app);
 // Initialize Socket.io with CORS configuration
 const io = new SocketIOServer(httpServer, {
   cors: {
+    //origin: process.env.FRONTEND_URL || 'http://localhost:5173', for production
     origin: 'http://localhost:5173',
     methods: ['GET', 'POST', 'DELETE', 'PUT'],
     credentials: true,
@@ -35,6 +36,10 @@ export { io };
 // Apply global middleware
 app.use(cookieParser());
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+// app.use(cors({ 
+//   origin: process.env.FRONTEND_URL || 'http://localhost:5173', 
+//   credentials: true 
+// }));
 app.use(express.json());
 
 // Register API routes

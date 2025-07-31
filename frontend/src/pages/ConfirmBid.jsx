@@ -147,7 +147,7 @@ export const ConfirmBid = () => {
             {initiatingPayment ? 'Processing...' : order ? 'Payment Initiated' : 'Pay'}
           </button>
         </div>
-
+        {/* After clicking on the pay button the order is created and the instead of storing it we give it to the PaymentWidget */}    
         {/* Render PaymentWidget if an order is available */}
         {order && (
           <PaymentWidget 

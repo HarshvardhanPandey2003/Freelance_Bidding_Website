@@ -85,6 +85,7 @@ const trackProjectVisit = async (projectId) => {
   if (!isRedisWorking()) return false;
   
   try {
+    // when user clicks on a project, we create a unique key for that project in a datastructure like
     const visitKey = getVisitKey(projectId);
     const visits = await redisClient.incr(visitKey);
     
@@ -100,7 +101,7 @@ const trackProjectVisit = async (projectId) => {
   }
 };
 
-// Cache project data
+// Cache project data means storing it in Redis
 const cacheProject = async (projectId, projectData, ttl = 300) => {
   if (!isRedisWorking()) return;
   
@@ -112,7 +113,7 @@ const cacheProject = async (projectId, projectData, ttl = 300) => {
   }
 };
 
-// Get cached project data
+// Get cached project data means retrieving it from Redis
 const getCachedProject = async (projectId) => {
   if (!isRedisWorking()) return null;
   
@@ -126,7 +127,7 @@ const getCachedProject = async (projectId) => {
   }
 };
 
-// Cache open projects list
+// Cache open projects list 
 const cacheOpenProjects = async (filters, projectsData, ttl = 300) => {
   if (!isRedisWorking()) return;
   
@@ -152,7 +153,7 @@ const getCachedOpenProjects = async (filters) => {
   }
 };
 
-// Clear project-related caches
+// Clear project-related caches when a project is updated or deleted
 const clearProjectCaches = async (projectId) => {
   if (!isRedisWorking()) return;
   
@@ -264,7 +265,7 @@ export const getClientProjects = asyncHandler(async (req, res) => {
 export const getProjectById = asyncHandler(async (req, res) => {
   const projectId = req.params.id;
   
-  // Track visit and check if should cache
+  //1.Track visit (increment counter)
   const shouldCache = await trackProjectVisit(projectId);
   
   // Try to get from cache first if it should be cached
