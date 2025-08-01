@@ -6,10 +6,12 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Production stage - Using Node.js serve instead of nginx
+# Production stage
 FROM node:18-alpine
 WORKDIR /app
-RUN npm install -g serve
+COPY package*.json ./
+RUN npm ci
 COPY --from=builder /app/dist ./dist
+
 EXPOSE 3000
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["npx", "serve", "-s", "dist", "-l", "3000"]
