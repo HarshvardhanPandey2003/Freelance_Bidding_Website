@@ -1,0 +1,27 @@
+Commands for Creating an Image and Pushing it into DockerHub : 
+
+# 1. Backend
+docker build -t harshvardhan2003/freelance-backend:latest ./backend
+docker push harshvardhan2003/freelance-backend:latest
+
+# 2. Frontend  
+docker build -t harshvardhan2003/freelance-frontend:latest ./frontend
+docker push harshvardhan2003/freelance-frontend:latest
+
+# 3. Redis (no build needed - uses official image)
+
+Commands for running the container : 
+# Start all services in detached mode
+docker-compose up -d
+
+# Stop all services
+docker-compose down
+
+# Stop and remove volumes (clears Redis data)
+docker-compose down -v
+
+# Rebuild and restart (if you made code changes)
+docker-compose up --build -d
+
+# Check running containers
+docker-compose ps
