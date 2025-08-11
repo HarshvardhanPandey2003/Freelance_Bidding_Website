@@ -1,19 +1,25 @@
-// src/controllers/bid.controller.js - Fixed with consistent data structure
+// src/controllers/bid.controller.js - Updated with Redis Pub/Sub
 import asyncHandler from '../utils/asyncHandler.js';
 import { Bid } from '../models/Bid.model.js';
 import { Project } from '../models/Project.model.js';
 import ApiError from '../utils/ApiError.js';
-import { getIO } from '../app.js';
+import redisClient from '../config/redis.js';
 import mongoose from 'mongoose';
 
-// Safe socket emission helper
-const safeSocketEmit = (eventName, roomId, data) => {
-  const io = getIO();
-  if (io) {
-    console.log(`Emitting ${eventName} to room ${roomId}:`, data);
-    io.to(roomId).emit(eventName, data);
-  } else {
-    console.warn(`Socket.io not available for emitting ${eventName}`);
+// Redis publish helper - replaces safeSocketEmit
+const publishBidEvent = async (eventName, projectId, data) => {
+  try {
+    const channel = `project:${projectId}`;
+    const message = JSON.stringify({
+      type: eventName,
+      data: data,
+      timestamp: new Date().toISOString()
+    });
+    
+    await redisClient.publish(channel, message);
+    console.log(`Published ${eventName} to ${channel}`);
+  } catch (error) {
+    console.error('Redis publish error:', error);
   }
 };
 
@@ -78,8 +84,8 @@ export const createBid = asyncHandler(async (req, res) => {
       client: project.client
     });
 
-    // Emit to project room
-    safeSocketEmit('newBid', `project:${projectId}`, responseBid);
+    // Publish to Redis instead of direct Socket.io emission
+    await publishBidEvent('newBid', projectId, responseBid);
     
     res.status(201).json(responseBid);
 
@@ -128,8 +134,8 @@ export const updateBid = asyncHandler(async (req, res) => {
   // Use consistent normalization
   const responseBid = normalizeBidResponse(populatedBid, bid.project);
 
-  // Emit to project room
-  safeSocketEmit('bidUpdate', `project:${bid.project._id}`, responseBid);
+  // Publish to Redis instead of direct Socket.io emission
+  await publishBidEvent('bidUpdate', bid.project._id, responseBid);
 
   res.json(responseBid);
 });
@@ -162,15 +168,14 @@ export const deleteBid = asyncHandler(async (req, res) => {
   const projectId = bid.project._id.toString();
   await bid.deleteOne();
 
-  // Emit to project room
-  safeSocketEmit('bidDelete', `project:${projectId}`, { 
+  // Publish to Redis instead of direct Socket.io emission
+  await publishBidEvent('bidDelete', projectId, { 
     projectId, 
     bidId: bidId.toString()
   });
 
   res.status(204).send();
 });
-
 
 // ==================================
 // GET PROJECT BIDS

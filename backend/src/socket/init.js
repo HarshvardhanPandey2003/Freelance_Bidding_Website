@@ -1,12 +1,44 @@
-// backend/src/socket/init.js - Updated disconnect handler
+// backend/src/socket/init.js - Updated with Redis Subscriber
 import { socketAuthMiddleware } from '../middleware/socketAuth.middleware.js';
 import { Project } from '../models/Project.model.js';
 import mongoose from 'mongoose';
 import { chatSocketHandler } from './chat.js';
+import redisClient from '../config/redis.js';
 
+// Setup Redis subscriber for bid events
+const setupRedisSubscriber = (io) => {
+  // Create a separate Redis client for subscribing
+  const subscriber = redisClient.duplicate();
+  
+  subscriber.connect().then(() => {
+    console.log('Redis subscriber connected');
+    
+    // Subscribe to all project channels
+    subscriber.pSubscribe('project:*', (message, channel) => {
+      try {
+        const { type, data } = JSON.parse(message);
+        const projectId = channel.split(':')[1];
+        
+        console.log(`Redis received ${type} for project ${projectId}`);
+        
+        // Emit to all Socket.io clients in this server instance
+        io.to(`project:${projectId}`).emit(type, data);
+        
+      } catch (error) {
+        console.error('Error processing Redis message:', error);
+      }
+    });
+    
+  }).catch(err => {
+    console.error('Redis subscriber connection error:', err);
+  });
+};
 
 export const initializeSocket = (io) => {
   io.use(socketAuthMiddleware);
+
+  // Setup Redis subscriber
+  setupRedisSubscriber(io);
 
   io.on('connection', (socket) => {
     console.log(`User ${socket.user.username} connected with ID:`, socket.id);
@@ -50,7 +82,6 @@ export const initializeSocket = (io) => {
         socket.emit('error', { message: 'Failed to join project room' });
       }
     });
-
 
     // Leave project room
     socket.on('leaveProject', (projectId) => {
