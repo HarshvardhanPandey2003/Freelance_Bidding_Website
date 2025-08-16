@@ -3,14 +3,10 @@
 /.env
 /backend/node_modules
 /frontend/node_modules
-/backend/.env
+backend/.env
 .DS_Store
 dist/
 build/
-*.log
-.env.local
-.env.development
-.env.production
 .idea/
 .vscode/
 npm-debug.log*
