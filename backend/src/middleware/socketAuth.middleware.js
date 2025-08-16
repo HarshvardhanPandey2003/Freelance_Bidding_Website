@@ -1,4 +1,5 @@
 // backend/src/middleware/socketAuth.middleware.js
+// Use this middleware to authenticate socket connections for security and user identification
 import jwt from 'jsonwebtoken';
 import cookie from 'cookie';
 import { User } from '../models/User.model.js';

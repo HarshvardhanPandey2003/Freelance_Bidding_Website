@@ -46,6 +46,8 @@ git push origin --delete exp-code   # Delete branch from GitHub
 
 
 
+
+Redis Pub/Subs : 
 Simple Explanation in Points:
 🔹 Before (Single Server):
 Freelancer creates bid → Controller → Direct WebSocket → Client sees update

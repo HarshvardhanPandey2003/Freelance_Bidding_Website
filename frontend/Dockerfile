@@ -1,4 +1,5 @@
 # Build stage
+# .env in the frontend directory
 FROM node:18-alpine as builder
 WORKDIR /app
 COPY package*.json ./

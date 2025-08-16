@@ -12,7 +12,7 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      const socketInstance = io('http://localhost:5000', {
+      const socketInstance = io(import.meta.env.VITE_SOCKET_URL, {
         withCredentials: true,
         // Add reconnection settings
         reconnection: true,

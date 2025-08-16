@@ -7,13 +7,15 @@ import redisClient from '../config/redis.js';
 
 // Setup Redis subscriber for bid events
 const setupRedisSubscriber = (io) => {
-  // Create a separate Redis client for subscribing
+  // Create a separate Redis client for subscribing which makes sure we don't block the main thread
   const subscriber = redisClient.duplicate();
   
   subscriber.connect().then(() => {
     console.log('Redis subscriber connected');
     
     // Subscribe to all project channels
+    // When you subscribe to project channels, it internally uses socket.io rooms to emit events
+    // By creating this layer of subscription, we're able to connect different servers instances together
     subscriber.pSubscribe('project:*', (message, channel) => {
       try {
         const { type, data } = JSON.parse(message);
@@ -58,7 +60,8 @@ export const initializeSocket = (io) => {
           socket.emit('error', { message: 'Invalid project ID format' });
           return;
         }
-
+        // Queries the database to find the project with the given projectId and only fetches client and status fields
+        // Uses .lean() for better performance (returns plain JavaScript object instead of Mongoose document)
         const project = await Project.findById(projectId).select('client status').lean();
         if (!project) {
           socket.emit('error', { message: 'Project not found' });
@@ -85,12 +88,12 @@ export const initializeSocket = (io) => {
 
     // Leave project room
     socket.on('leaveProject', (projectId) => {
-      // Add validation for ObjectId format
+       // 1. Validate projectId format
       if (!projectId || !mongoose.Types.ObjectId.isValid(projectId)) {
         socket.emit('error', { message: 'Invalid project ID format' });
         return;
       }
-
+      // 2. Check if project exists in database
       socket.leave(`project:${projectId}`);
       if (socket.currentProject === projectId) {
         socket.currentProject = null;
@@ -104,18 +107,20 @@ export const initializeSocket = (io) => {
     // ==================================
 
     // Handle disconnect - FIX MEMORY LEAK
+    // So what this does is when you close the application
+    // socket.currentProject still exists in server memory. Socket might still be "joined" to the room
+    // thats why we call this when the user disconnects
     socket.on('disconnect', () => {
-      // Clean up any rooms the user was in
+      
       if (socket.currentProject) {
         socket.leave(`project:${socket.currentProject}`);
         console.log(`User ${socket.user.username} left project room ${socket.currentProject} on disconnect`);
         socket.currentProject = null;
       }
-      
       console.log(`User ${socket.user.username} disconnected:`, socket.id);
     });
 
-    // Handle errors
+      // 3. Only THEN allow user to join the room
     socket.on('error', (error) => {
       console.error('Socket error:', error);
     });

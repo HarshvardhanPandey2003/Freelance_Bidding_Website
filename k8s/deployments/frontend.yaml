@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      serviceAccountName: workload-identity-sa  # NEW: Added for Key Vault access
+      volumes:  # NEW: Added volume for secrets
+      - name: secrets-store
+        csi:
+          driver: secrets-store.csi.k8s.io
+          volumeAttributes:
+            secretProviderClass: "app-secrets-provider"
+      containers:
+      - name: frontend
+        image: harshvardhan2003/freelance-frontend:latest
+        ports:
+        - containerPort: 3000
+        # CHANGED: Get non-sensitive config from ConfigMap
+        envFrom:
+        - configMapRef:
+            name: app-config
+        # NEW: Get sensitive Razorpay key from Key Vault
+        env:
+        - name: VITE_RAZORPAY_KEY
+          valueFrom:
+            secretKeyRef:
+              name: frontend-secrets-k8s
+              key: VITE_RAZORPAY_KEY
+        # NEW: Mount secrets volume
+        volumeMounts:
+        - name: secrets-store
+          mountPath: "/mnt/secrets"
+          readOnly: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+  type: LoadBalancer

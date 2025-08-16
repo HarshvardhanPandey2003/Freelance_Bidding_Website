@@ -7,6 +7,8 @@ import redisClient from '../config/redis.js';
 import mongoose from 'mongoose';
 
 // Redis publish helper - replaces safeSocketEmit
+// This takes input as event (createBid, updateBid, deleteBid) , data and projectId
+// Then sets channel and message then usese the reddit client to publish the message
 const publishBidEvent = async (eventName, projectId, data) => {
   try {
     const channel = `project:${projectId}`;
@@ -15,7 +17,7 @@ const publishBidEvent = async (eventName, projectId, data) => {
       data: data,
       timestamp: new Date().toISOString()
     });
-    
+    // Publish means it will be sent to all subscribers of that channel which is projectId in the redis server
     await redisClient.publish(channel, message);
     console.log(`Published ${eventName} to ${channel}`);
   } catch (error) {
@@ -24,6 +26,7 @@ const publishBidEvent = async (eventName, projectId, data) => {
 };
 
 // Helper function to normalize bid response
+// What is does is it takes the bid and project data and returns a normalized object
 const normalizeBidResponse = (bid, projectData = null) => {
   return {
     ...bid,
