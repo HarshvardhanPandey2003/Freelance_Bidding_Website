@@ -19,6 +19,7 @@ spec:
       - name: secrets-store
         csi:
           driver: secrets-store.csi.k8s.io
+          readOnly: true  #
           volumeAttributes:
             secretProviderClass: "app-secrets-provider"
       containers:
@@ -32,6 +33,8 @@ spec:
             name: app-config
         # NEW: Get sensitive Razorpay key from Key Vault
         env:
+        - name: PORT
+          value: "3000"
         - name: VITE_RAZORPAY_KEY
           valueFrom:
             secretKeyRef:

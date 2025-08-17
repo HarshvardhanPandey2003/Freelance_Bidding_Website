@@ -1,0 +1,13 @@
+# Exclude development environment files
+.env
+.env.*
+!.env.production
+
+# Other exclusions
+node_modules
+dist
+logs
+*.log
+.vscode/
+.idea
+.DS_Store

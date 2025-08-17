@@ -12,9 +12,17 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      const socketInstance = io(import.meta.env.VITE_SOCKET_URL, {
+      // Automatically choose URL based on environment
+      // const socketUrl = import.meta.env.PROD 
+      //   ? window.location.origin 
+      //   : import.meta.env.VITE_API_URL;
+      const socketUrl = window.location.origin 
+
+      console.log(`Socket connecting to: ${socketUrl} (Production: ${import.meta.env.PROD})`);
+
+      const socketInstance = io(socketUrl, {
         withCredentials: true,
-        // Add reconnection settings
+        auth: { userId: user._id },
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,

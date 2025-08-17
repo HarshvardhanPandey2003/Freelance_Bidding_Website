@@ -1,11 +1,11 @@
 // frontend/src/services/socket.js
 import { io } from 'socket.io-client';
 
-const SOCKET_URL =
-  import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL =  window.location.origin; // import.meta.env.VITE_API_URL; 
 
 // This variable will hold our socket instance.
 let socket;
+
 export const initSocket = (token) => {
   if (!socket) {
     socket = io(SOCKET_URL, {

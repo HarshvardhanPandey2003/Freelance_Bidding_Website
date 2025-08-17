@@ -1,10 +1,11 @@
 // frontend/src/services/api.js
-
-import axios from 'axios';
 //Axios is like a messenger between your frontend and backend. 
 // It helps send requests (like GET, POST) to your backend API and brings back responses.
+import axios from 'axios';
+
+const API_URL=window.location.origin;  // import.meta.env.VITE_API_URL;  // During Development : 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: API_URL,
   withCredentials: true
 });
 
