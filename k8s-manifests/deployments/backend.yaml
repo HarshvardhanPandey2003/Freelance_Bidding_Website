@@ -1,3 +1,4 @@
+# k8s-manifests/deployments/backend.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,6 +27,13 @@ spec:
       containers:
       - name: backend
         image: harshvardhan2003/freelance-backend:latest
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
         ports:
         - containerPort: 5000
         envFrom:

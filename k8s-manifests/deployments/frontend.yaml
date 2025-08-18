@@ -1,3 +1,4 @@
+# k8s-manifests/deployments/frontend.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,7 +17,7 @@ spec:
         app: frontend
     spec:
       serviceAccountName: workload-identity-sa  # NEW: Added for Key Vault access
-      volumes:  # NEW: Added volume for secrets
+      volumes: 
       - name: secrets-store
         csi:
           driver: secrets-store.csi.k8s.io
@@ -26,6 +27,13 @@ spec:
       containers:
       - name: frontend
         image: harshvardhan2003/freelance-frontend:latest
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "300m"
+            memory: "256Mi"
         ports:
         - containerPort: 3000
         # CHANGED: Get non-sensitive config from ConfigMap
