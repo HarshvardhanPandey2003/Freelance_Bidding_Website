@@ -6,6 +6,7 @@ metadata:
     app: frontend
 spec:
   replicas: 1
+  revisionHistoryLimit: 2 # Replcas track history and can perform instant rollbacks
   selector:
     matchLabels:
       app: frontend

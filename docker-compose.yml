@@ -1,5 +1,5 @@
 version: '3.8'
-
+# ports:- "HOST_PORT:CONTAINER_PORT"
 services:
   frontend:
     image: harshvardhan2003/freelance-frontend:latest
@@ -13,7 +13,7 @@ services:
   backend:
     image: harshvardhan2003/freelance-backend:latest
     ports:
-      - "5000:5000"
+      - "5000:5000" # If Spring Boot then "8080:8080"
     environment:
       - REDIS_URL=redis://redis:6379
       - MONGODB_URL=${MONGODB_URL}   # set in .env or export in shell
