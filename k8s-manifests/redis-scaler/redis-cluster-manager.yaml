@@ -1,0 +1,97 @@
+# redis-smart-manager.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: redis-cluster-manager
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cluster-manager
+            image: redis:7-alpine
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Checking Redis cluster health..."
+              
+              CLUSTER_INFO=$(redis-cli -h redis-cluster-0.redis-cluster -p 6379 cluster nodes)
+              
+              MASTERS=$(echo "$CLUSTER_INFO" | grep -c "master")
+              REPLICAS=$(echo "$CLUSTER_INFO" | grep -c "slave")
+              TOTAL_NODES=$(echo "$CLUSTER_INFO" | wc -l)
+              
+              READY_PODS=$(kubectl get pods -l app=redis-cluster --field-selector=status.phase=Running -o name | wc -l)
+              
+              DESIRED_REPLICAS=$(kubectl get statefulset redis-cluster -o jsonpath='{.spec.replicas}')
+              
+              echo "Cluster status: $MASTERS masters, $REPLICAS replicas, $TOTAL_NODES total"
+              echo "Available pods: $READY_PODS, Desired: $DESIRED_REPLICAS"
+              
+              if [ "$READY_PODS" -lt "$DESIRED_REPLICAS" ]; then
+                echo "Scale-up in progress, waiting for more pods..."
+                exit 0
+              elif [ "$READY_PODS" -gt "$DESIRED_REPLICAS" ]; then
+                echo "Scale-down in progress, pods will be terminated soon..."
+                exit 0
+              fi
+              
+              # Case 1: More pods available than cluster knows about (HPA scaled up)
+              if [ "$READY_PODS" -gt "$TOTAL_NODES" ]; then
+                echo "Adding new nodes to cluster..."
+                for i in $(seq $TOTAL_NODES $((READY_PODS-1))); do
+                  NEW_POD="redis-cluster-$i.redis-cluster"
+                  
+                  if kubectl get pod redis-cluster-$i --ignore-not-found | grep -q Running; then
+                    echo "Adding node: $NEW_POD"
+                    redis-cli -h redis-cluster-0.redis-cluster -p 6379 --cluster add-node $NEW_POD:6379 redis-cluster-0.redis-cluster:6379
+                    
+                    # Make it a replica if we have enough masters
+                    CURRENT_MASTERS=$(redis-cli -h redis-cluster-0.redis-cluster -p 6379 cluster nodes | grep -c "master")
+                    TARGET_MASTERS=$((READY_PODS / 2))  # Aim for 50% masters
+                    
+                    if [ "$CURRENT_MASTERS" -gt "$TARGET_MASTERS" ]; then
+                      MASTER_ID=$(redis-cli -h redis-cluster-0.redis-cluster -p 6379 cluster nodes | grep "master" | head -1 | cut -d' ' -f1)
+                      redis-cli -h $NEW_POD -p 6379 cluster replicate $MASTER_ID
+                      echo "Made $NEW_POD a replica of $MASTER_ID"
+                    fi
+                  fi
+                done
+                
+                redis-cli -h redis-cluster-0.redis-cluster -p 6379 --cluster rebalance redis-cluster-0.redis-cluster:6379
+              fi
+              
+              # Case 2: Replica imbalance - BUT only if we have spare pods
+              if [ "$MASTERS" -gt "$REPLICAS" ] && [ "$READY_PODS" -gt "$TOTAL_NODES" ]; then
+                echo "Replica imbalance detected AND spare pods available"
+                echo "Masters: $MASTERS, Replicas: $REPLICAS, Spare pods: $((READY_PODS - TOTAL_NODES))"
+                
+                redis-cli -h redis-cluster-0.redis-cluster -p 6379 cluster nodes | grep "master" | while read line; do
+                  MASTER_ID=$(echo "$line" | cut -d' ' -f1)
+                  
+                  REPLICA_COUNT=$(redis-cli -h redis-cluster-0.redis-cluster -p 6379 cluster nodes | grep "slave,$MASTER_ID" | wc -l)
+                  
+                  if [ "$REPLICA_COUNT" -eq 0 ] && [ "$READY_PODS" -gt "$TOTAL_NODES" ]; then
+                    echo "Master $MASTER_ID has no replica, creating one from spare pods"
+                    
+                    NEW_POD_INDEX=$TOTAL_NODES
+                    NEW_POD="redis-cluster-$NEW_POD_INDEX.redis-cluster"
+                    
+                    if kubectl get pod redis-cluster-$NEW_POD_INDEX --ignore-not-found | grep -q Running; then
+                      echo "Adding $NEW_POD as replica for master $MASTER_ID"
+                      redis-cli -h redis-cluster-0.redis-cluster -p 6379 --cluster add-node $NEW_POD:6379 redis-cluster-0.redis-cluster:6379 --cluster-slave --cluster-master-id $MASTER_ID
+                      break  # Only add one replica per run
+                    fi
+                  fi
+                done
+              elif [ "$MASTERS" -gt "$REPLICAS" ] && [ "$READY_PODS" -eq "$TOTAL_NODES" ]; then
+                echo "Replica imbalance detected but no spare pods - this may be intentional scale-down"
+                echo "Not creating new replicas. Masters: $MASTERS, Replicas: $REPLICAS"
+              fi
+              
+              echo "Cluster management complete"
+          restartPolicy: OnFailure
+          serviceAccountName: redis-manager-sa
