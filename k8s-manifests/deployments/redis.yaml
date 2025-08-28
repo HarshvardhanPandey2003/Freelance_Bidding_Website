@@ -1,4 +1,6 @@
-# k8s-manifests/deployments/redis.yaml
+# # Redis-cluster deployment 
+# # k8s-manifests/deployments/redis.yaml (REPLACE the entire file)
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -43,5 +45,8 @@ spec:
   type: ClusterIP
 
 ---
+
+
+
 
 

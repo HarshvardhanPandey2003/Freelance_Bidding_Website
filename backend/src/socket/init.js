@@ -6,6 +6,8 @@ import { chatSocketHandler } from './chat.js';
 import redisClient from '../config/redis.js';
 
 // Setup Redis subscriber for bid events
+// What you're actually doing here is subscribing to Redis channels
+// And then emitting events to all connected Socket.io clients through the project rooms
 const setupRedisSubscriber = (io) => {
   // Create a separate Redis client for subscribing which makes sure we don't block the main thread
   const subscriber = redisClient.duplicate();
@@ -15,7 +17,6 @@ const setupRedisSubscriber = (io) => {
     
     // Subscribe to all project channels
     // When you subscribe to project channels, it internally uses socket.io rooms to emit events
-    // By creating this layer of subscription, we're able to connect different servers instances together
     subscriber.pSubscribe('project:*', (message, channel) => {
       try {
         const { type, data } = JSON.parse(message);
@@ -39,7 +40,7 @@ const setupRedisSubscriber = (io) => {
 export const initializeSocket = (io) => {
   io.use(socketAuthMiddleware);
 
-  // Setup Redis subscriber
+  // Setup Redis subscriber when you initialize the socket
   setupRedisSubscriber(io);
 
   io.on('connection', (socket) => {

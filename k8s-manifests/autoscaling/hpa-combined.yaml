@@ -8,8 +8,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: frontend
-  minReplicas: 2
-  maxReplicas: 10
+  minReplicas: 2  # HPA will never go below 2 pods (always keep at least 2 for availability)
+  maxReplicas: 10 # HPA can scale up to max 10 pods if demand is high.
   metrics:
   - type: Resource
     resource:

@@ -4,8 +4,9 @@ import { Message } from '../models/Chat.model.js';
 
 /**
  * GET /api/chats/connections
- * Fetches all chat connections for the authenticated user (req.user)
- * based on completed payments.
+  Returns a list of users the authenticated user can chat with, based on completed payments.
+  It returns this through the payement model, which contains the user IDs and their roles.
+  A freelancer gets a list of clients they've completed work for.
  */
 export const getChatConnections = async (req, res, next) => {
   try {
@@ -29,7 +30,8 @@ export const getChatConnections = async (req, res, next) => {
       return res.status(403).json({ message: 'Unauthorized' });
     }
 
-    // Create the connections list using the populated user data.
+    // This functions returns a formatted list of connections.
+    // Which is basically the partner's ID, username, and email.
     const formattedConnections = connections.map((payment) => {
       return {
         partnerId:

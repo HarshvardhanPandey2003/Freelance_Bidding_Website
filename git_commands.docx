@@ -24,83 +24,22 @@ bash
 # After editing files
 git add .
 git commit -m "Test experimental feature"
+
 4. If the Experiment Works → Merge into Main
 Switch back to main:
-
 bash
 git checkout main
-Merge changes from exp-code:
 
-bash
+# Merge changes from exp-code:
 git merge exp-code
-Push the updated main to GitHub:
 
-bash
+# Push the updated main to GitHub:
 git push origin main
 
 5. If the Experiment Fails → Delete the Branch
 While on main:
-bash
 git branch -d exp-code        # Delete branch locally
 git push origin --delete exp-code   # Delete branch from GitHub
 
 
 
-
-Redis Pub/Subs : 
-Simple Explanation in Points:
-🔹 Before (Single Server):
-Freelancer creates bid → Controller → Direct WebSocket → Client sees update
-
-Problem: Only works with 1 server
-🔹 After (Multiple Servers with Redis):
-Freelancer creates bid → Controller → Redis Pub/Sub → All Server Instances → WebSocket → All clients see update
-
-How Redis Pub/Sub "Finds" Multiple Server Instances
-Important: Redis doesn't "identify" or "find" server instances. It's simpler than that:
-
-How It Actually Works:
-🔹 Redis is a Broadcasting System:
-
-text
-Redis Channel: "project:123"
-
-Server 1 ← Subscribes to "project:*"
-Server 2 ← Subscribes to "project:*"  
-Server 3 ← Subscribes to "project:*"
-
-When Controller publishes to "project:123":
-→ Redis broadcasts to ALL subscribers
-→ Server 1 receives message
-→ Server 2 receives message  
-→ Server 3 receives message
-Interview Explanation:
-"Redis doesn't identify servers. Instead:"
-
-"Each server instance subscribes to Redis channels when it starts up"
-
-"When a bid event happens, we publish to Redis"
-
-"Redis automatically broadcasts to ALL subscribers"
-
-"Each server receives the message and forwards it to its WebSocket clients"
-
-"It's like a radio station - anyone tuning in gets the broadcast"
-
-Code Flow:
-javascript
-// Server 1 startup:
-subscriber.pSubscribe('project:*', handleMessage); ✅
-
-// Server 2 startup:  
-subscriber.pSubscribe('project:*', handleMessage); ✅
-
-// Server 3 startup:
-subscriber.pSubscribe('project:*', handleMessage); ✅
-
-// When bid created:
-redisClient.publish('project:123', bidData); 
-// → All 3 servers receive it automatically
-
-As all the serves have this code so what happens is they subscribe to the same channel which 
-in this case is the project id 

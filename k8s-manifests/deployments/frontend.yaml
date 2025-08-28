@@ -21,9 +21,10 @@ spec:
       - name: secrets-store
         csi:
           driver: secrets-store.csi.k8s.io
-          readOnly: true  #
+          readOnly: true  
           volumeAttributes:
             secretProviderClass: "app-secrets-provider"
+      # This tells the Scheduler how much CPU & Memory your Pod needs, and also sets boundaries.
       containers:
       - name: frontend
         image: harshvardhan2003/freelance-frontend:latest
@@ -64,6 +65,10 @@ spec:
     app: frontend
   ports:
     - protocol: TCP
-      port: 80
-      targetPort: 3000
+      port: 80   # Service listens here
+      targetPort: 3000  # Forward traffic to container’s port
   type: LoadBalancer
+
+# Port 80 - This is the port your Kubernetes Service (frontend-service) exposes to other pods or external users.
+# 80 is the default HTTP port. That’s why browsers don’t require you to type it (http://myapp.com instead of http://myapp.com:80).
+# TargetPort 3000 - This is the port your frontend container listens on. It’s where your React app runs inside the pod. Its an internal port.

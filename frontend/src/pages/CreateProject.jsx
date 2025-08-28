@@ -8,7 +8,7 @@ import '../output.css';
 export const CreateProject = () => {
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({//We create a form in the frontend to send the request back to the backend
     title: '',
     description: '',
     budget: '',

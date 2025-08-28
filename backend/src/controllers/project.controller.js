@@ -351,51 +351,57 @@ export const deleteProject = asyncHandler(async (req, res) => {
 // Get open projects with Redis caching
 export const getOpenProjects = asyncHandler(async (req, res) => {
   // Extract query parameters for filtering and pagination
-  const { minBudget, maxBudget, deadline, skills, page, limit } = req.query;
-  
-  // Create filters object for caching key
-  const filters = { minBudget, maxBudget, deadline, skills, page, limit };
-  
+  const { minBudget, maxBudget, deadline, skills, page, limit, title } = req.query;
+
+  // Create filters object for caching key (include title as well)
+  const filters = { minBudget, maxBudget, deadline, skills, page, limit, title };
+
   // Try to get from cache first
   const cachedProjects = await getCachedOpenProjects(filters);
   if (cachedProjects) {
     return res.json(cachedProjects);
   }
-  
+
   // Main Conditions: show projects that are OPEN and not deleted
   const filter = { 
     status: 'OPEN',
-    isDeleted: { $ne: true }  // Add this line to exclude deleted projects
+    isDeleted: { $ne: true }  // exclude deleted projects
   };
-  
-  // Add budget filtering if provided
+
+  // Budget filtering
   if (minBudget || maxBudget) {
     filter.budget = {};
     if (minBudget) filter.budget.$gte = Number(minBudget);
     if (maxBudget) filter.budget.$lte = Number(maxBudget);
   }
-  
-  // Deadline filtering: projects with deadlines on or before the provided date
+
+  // Deadline filtering
   if (deadline) {
     const parsedDeadline = new Date(deadline);
     if (!isNaN(parsedDeadline.getTime())) {
       filter.deadline = { $lte: parsedDeadline };
     }
   }
-  
-  // Skills filtering: projects that include at least one of the specified skills
+
+  // Skills filtering
   if (skills) {
-    // Convert skills to an array (if a comma-separated string is provided)
     const skillsArr = Array.isArray(skills) ? skills : skills.split(',').map(s => s.trim());
     filter.skills = { $in: skillsArr };
   }
-  
-  // Pagination: default page 1 and limit 10 if not provided
+
+  // ✅ Title filtering (case-insensitive partial match)
+  if (title) {
+    filter.title = { $regex: title, $options: 'i' };
+    // If you only want matches that START with title:
+    // filter.title = { $regex: `^${title}`, $options: 'i' };
+  }
+
+  // Pagination
   const pageNum = parseInt(page, 10) || 1;
   const limitNum = parseInt(limit, 10) || 10;
   const skip = (pageNum - 1) * limitNum;
 
-  // Query the database with the filter, pagination, and sorting (newest first)
+  // Query DB
   const projects = await Project.find(filter)
     .sort({ createdAt: -1 })
     .skip(skip)
@@ -403,7 +409,7 @@ export const getOpenProjects = asyncHandler(async (req, res) => {
     .select('-__v -updatedAt')
     .lean();
 
-  // Cache the results
+  // Cache results
   await cacheOpenProjects(filters, projects);
 
   res.json(projects);

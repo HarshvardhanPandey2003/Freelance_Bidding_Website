@@ -1,40 +1,27 @@
 // frontend/src/services/socket.js
 import { io } from 'socket.io-client';
 
-const SOCKET_URL =  window.location.origin; // import.meta.env.VITE_API_URL; 
+const SOCKET_URL = window.location.origin;
 
-// This variable will hold our socket instance.
-let socket;
+let socket = null;  // Just a storage variable
 
-export const initSocket = (token) => {
+// Create a socket with this token IF none exists , used when socket connection is needed
+export const initSocket = (token) => { 
   if (!socket) {
     socket = io(SOCKET_URL, {
       withCredentials: true,
-      auth: {
-        token,
-      },
-      extraHeaders: {
-        withCredentials: true,
-      },
+      auth: { token },
+      extraHeaders: { withCredentials: true },
     });
   }
   return socket;
 };
 
-// Getter to retrieve the socket instance.
-export const getSocket = () => socket;
+export const getSocket = () => socket;  // Get current socket
 
-// For backwards compatibility, if socket hasn't been initialized via initSocket,
-// immediately set it up with a default connection.
-if (!socket) {
-  socket = io(SOCKET_URL, {
-    withCredentials: true,
-    extraHeaders: {
-      withCredentials: true,
-    },
-  });
-}
+export const setSocket = (socketInstance) => {  // Store this socket in the SocketContext so that others can access it
+  socket = socketInstance;
+};
 
-// Export the socket as a named export as well as the default export.
 export { socket };
 export default socket;

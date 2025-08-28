@@ -52,7 +52,7 @@ export const chatSocketHandler = (socket) => {
       const room = generateRoomName(user._id.toString(), partnerId.toString());
       socket.join(room);
 
-      // Optionally, fetch chat history (if messages are persisted).
+      // Fetch chat history (if messages are persisted).
       const messages = await Message.find({
         $or: [
           { sender: user._id, receiver: partnerId },

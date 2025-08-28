@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 
 // Redis publish helper - replaces safeSocketEmit
 // This takes input as event (createBid, updateBid, deleteBid) , data and projectId
-// Then sets channel and message then usese the reddit client to publish the message
+// Then sets channel and message then uses the redis client to publish the message
 const publishBidEvent = async (eventName, projectId, data) => {
   try {
     const channel = `project:${projectId}`;

@@ -22,8 +22,8 @@ export const SocketProvider = ({ children }) => {
 
       const socketInstance = io(socketUrl, {
         withCredentials: true,
-        auth: { userId: user._id },
-        reconnection: true,
+        auth: { userId: user._id },  // This has USER AUTH - important!
+        reconnection: true, // AUTO-RECONNECT if connection drops
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,
         timeout: 20000
@@ -44,10 +44,11 @@ export const SocketProvider = ({ children }) => {
         setIsConnected(false);
       });
 
-      setSocket(socketInstance);
+      setSocket(socketInstance);  // Keeps socket alive in state constently
+        // Stores in React state and ALSO stores in socket.js for others to use
 
       return () => {
-        socketInstance.disconnect();
+        socketInstance.disconnect(); // Only disconnects when user logs out
         setIsConnected(false);
       };
     } else {

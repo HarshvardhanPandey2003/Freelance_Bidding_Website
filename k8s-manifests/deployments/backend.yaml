@@ -29,11 +29,11 @@ spec:
         image: harshvardhan2003/freelance-backend:latest
         resources:
           requests:
-            cpu: "500m"
-            memory: "512Mi"
+            cpu: "100m"      # Reduced from 500m
+            memory: "256Mi"   # Reduced from 512Mi
           limits:
-            cpu: "1000m"
-            memory: "1Gi"
+            cpu: "500m"       # Reduced from 1000m
+            memory: "512Mi"   # Reduced from 1Gi
         ports:
         - containerPort: 5000
         envFrom:
