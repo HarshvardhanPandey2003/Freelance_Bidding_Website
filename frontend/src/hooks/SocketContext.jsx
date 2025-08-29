@@ -19,7 +19,8 @@ export const SocketProvider = ({ children }) => {
       const socketUrl = window.location.origin 
 
       console.log(`Socket connecting to: ${socketUrl} (Production: ${import.meta.env.PROD})`);
-
+      // When you write io (), it tries to connect to the server with /socket.io by default 
+      // As in the backend in app.js we have wrapped the socket.io server around the same HTTP server as express
       const socketInstance = io(socketUrl, {
         withCredentials: true,
         auth: { userId: user._id },  // This has USER AUTH - important!

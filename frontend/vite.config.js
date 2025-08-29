@@ -7,15 +7,19 @@ export default defineConfig({
   optimizeDeps: {
     include: ['date-fns']
   },
-  // ADD THIS PROXY CONFIGURATION and during running it locally remove the server section
-  // server: {
-  //   proxy: {
-  //     // Proxy all /api requests to backend service
-  //     '/api': {
-  //       target: 'http://backend-service:5000',
-  //       changeOrigin: true,
-  //       secure: false
-  //     }
-  //   }
-  // }
+  // Add this for local development
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/socket.io': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        ws: true,
+      }
+    }
+  }
 })

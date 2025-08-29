@@ -94,7 +94,7 @@ jobs:
         kubectl apply -f k8s-manifests/configmaps/app-config.yaml
         kubectl apply -f k8s-manifests/secrets/secret-provider.yaml
         kubectl apply -f k8s-manifests/secrets/service-account.yaml
-        
+        kubectl apply -f k8s-manifests/ingress/ingress.yaml
         # Wait for secret provider to be ready
         echo "⏳ Waiting for secrets store CSI driver to be ready..."
         kubectl wait --for=condition=Ready pod \
@@ -124,15 +124,24 @@ jobs:
         kubectl wait --for=condition=available deployment/frontend --timeout=300s
         
         echo "✅ All deployments are ready"
+    - name: Deploy Ingress Controller 
+      run: |
+        echo "🚀 Deploying Ingress..."
+        kubectl apply -f ingress/ingress.yaml
 
-    - name: Get LoadBalancer IP
+        echo "⏳ Waiting for Ingress to be ready..."
+        kubectl wait --for=condition=Ready ingress/app-ingress --timeout=300s || echo "⚠️ Ingress may still be setting up"
+        
+        echo "✅ Ingress deployed successfully"
+
+    - name:  Get Ingress IP
       id: get-ip
       run: |
         echo "🌐 Waiting for LoadBalancer to assign external IP..."
         
         FRONTEND_IP=""
         for i in {1..30}; do
-          FRONTEND_IP=$(kubectl get service frontend-service \
+          FRONTEND_IP=$(kubectl get ingress app-ingress \
             -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
           
           if [[ $FRONTEND_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -146,9 +155,12 @@ jobs:
         
         if [[ ! $FRONTEND_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
           echo "❌ Failed to get external IP after 10 minutes"
-          echo "Service status:"
-          kubectl get service frontend-service -o wide
-          kubectl describe service frontend-service
+          echo "Ingress status:"
+          kubectl get ingress app-ingress -o wide
+          kubectl describe ingress app-ingress
+          # Fallback: try getting IP from ingress-nginx service
+          echo "Trying ingress-nginx service..."
+          kubectl get service ingress-nginx-controller -n ingress-nginx -o wide
           exit 1
         fi
         
@@ -178,7 +190,7 @@ jobs:
           FRONTEND_URL: "$FRONTEND_URL"
           BACKEND_API_URL: "http://backend-service:5000"
           REDIS_URI: "redis://redis-service:6379"
-          NODE_ENV: "production"
+          NODE_ENV: "prod"
           JWT_EXPIRES_IN: "7d"
         EOF
         
@@ -221,7 +233,17 @@ jobs:
     - name: Health Check
       run: |
         echo "🏥 Performing application health check..."
+        # Test API endpoint through Ingress
+        echo "🔍 Testing API endpoint through Ingress..."
+        if timeout 30 curl -sS -f "http://$FRONTEND_IP/api/health" > /dev/null 2>&1; then
+          echo "✅ API endpoint is responding correctly through Ingress"
+        else
+          echo "⚠️  API health check failed (endpoint may not exist)"
+        fi
         
+        # Check ingress routing
+        echo "🔍 Verifying Ingress configuration..."
+        kubectl describe ingress app-ingress
         # Use the stored IP from get-ip step output
         FRONTEND_IP="${{ steps.get-ip.outputs.frontend-ip }}"
         
