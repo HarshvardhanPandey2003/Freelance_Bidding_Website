@@ -86,6 +86,27 @@ jobs:
         echo "✅ Updated secret-provider.yaml"
         echo "  • User Assigned Identity ID: ${{ steps.get-identity.outputs.client-id }}"
         echo "  • Tenant ID: ${{ steps.get-identity.outputs.tenant-id }}"
+    - name: Assign Key Vault Permissions
+      run: |
+        echo "🔐 Assigning Key Vault permissions to AKS identity..."
+        
+        CLIENT_ID="${{ steps.get-identity.outputs.client-id }}"
+        
+        # Assign Key Vault Secrets User role to the AKS identity
+        az role assignment create \
+          --assignee $CLIENT_ID \
+          --role "Key Vault Secrets User" \
+          --scope /subscriptions/${{ steps.get-identity.outputs.subscription-id }}/resourceGroups/${{ env.RESOURCE_GROUP }}/providers/Microsoft.KeyVault/vaults/${{ env.KEY_VAULT_NAME }} \
+          --only-show-errors || echo "⚠️ Role assignment may already exist"
+        
+        echo "✅ Key Vault permissions assigned successfully"
+        echo "  • Identity: $CLIENT_ID"
+        echo "  • Role: Key Vault Secrets User"
+        echo "  • Key Vault: ${{ env.KEY_VAULT_NAME }}"
+        
+        # Wait a bit for propagation
+        echo "⏳ Waiting 30 seconds for RBAC propagation..."
+        sleep 30
 
     - name: Deploy ConfigMaps and Secrets
       run: |
@@ -119,9 +140,9 @@ jobs:
         echo "⏳ Waiting for deployments to be ready..."
         
         # Wait for deployments to be available
-        kubectl wait --for=condition=available deployment/redis --timeout=300s
-        kubectl wait --for=condition=available deployment/backend --timeout=300s
-        kubectl wait --for=condition=available deployment/frontend --timeout=300s
+        kubectl wait --for=condition=available deployment/redis --timeout=180s
+        kubectl wait --for=condition=available deployment/backend --timeout=180s
+        kubectl wait --for=condition=available deployment/frontend --timeout=180s
         
         echo "✅ All deployments are ready"
     - name: Deploy Ingress Controller 
