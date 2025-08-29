@@ -84,8 +84,33 @@ jobs:
         sed -i "s/tenantId: .*/tenantId: \"${{ steps.get-identity.outputs.tenant-id }}\"/" k8s-manifests/secrets/secret-provider.yaml
         
         echo "✅ Updated secret-provider.yaml"
-        echo "  • User Assigned Identity ID: ${{ steps.get-identity.outputs.client-id }}"
-        echo "  • Tenant ID: ${{ steps.get-identity.outputs.tenant-id }}"
+
+    - name: Assign Key Vault Access to AKS Identity  # NEW STEP
+      run: |
+        echo "🔐 Assigning Key Vault Secrets User role to AKS managed identity..."
+        
+        RESOURCE_GROUP_SCOPE="/subscriptions/${{ steps.get-identity.outputs.subscription-id }}/resourceGroups/${{ env.RESOURCE_GROUP }}"
+        
+        # Check if role assignment already exists
+        EXISTING_ASSIGNMENT=$(az role assignment list \
+          --assignee "${{ steps.get-identity.outputs.client-id }}" \
+          --role "Key Vault Secrets User" \
+          --scope "$RESOURCE_GROUP_SCOPE" \
+          --query "[0].id" -o tsv 2>/dev/null || echo "")
+        
+        if [ -z "$EXISTING_ASSIGNMENT" ]; then
+          az role assignment create \
+            --assignee "${{ steps.get-identity.outputs.client-id }}" \
+            --role "Key Vault Secrets User" \
+            --scope "$RESOURCE_GROUP_SCOPE"
+          echo "✅ Role assignment created"
+        else
+          echo "✅ Role assignment already exists"
+        fi
+        
+        # Wait for RBAC propagation
+        sleep 30
+        
     - name: Assign Key Vault Permissions
       run: |
         echo "🔐 Assigning Key Vault permissions to AKS identity..."
