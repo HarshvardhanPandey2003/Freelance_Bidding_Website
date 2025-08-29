@@ -18,7 +18,7 @@ spec:
             port:
               number: 5000
       # Socket.IO routes  
-      - path: /socket.io
+      - path: /socket.io/
         pathType: Prefix
         backend:
           service:
