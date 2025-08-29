@@ -3,10 +3,7 @@ kind: Ingress
 metadata:
   name: app-ingress
   annotations:
-    # REMOVE this line - it's causing the problem
-    # nginx.ingress.kubernetes.io/rewrite-target: /
-    
-    # Keep these
+    # Removed the rewrite-target that was causing API issues
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
@@ -17,7 +14,7 @@ spec:
   rules:
   - http:
       paths:
-      # Backend API routes - will forward /api/* as-is
+      # Backend API routes
       - path: /api
         pathType: Prefix
         backend:
@@ -25,9 +22,9 @@ spec:
             name: backend-service
             port:
               number: 5000
-      # Socket.IO routes  
+      # Socket.IO routes - Use ImplementationSpecific (this worked for you before)
       - path: /socket.io
-        pathType: Prefix  # Changed back to Prefix
+        pathType: ImplementationSpecific
         backend:
           service:
             name: backend-service
