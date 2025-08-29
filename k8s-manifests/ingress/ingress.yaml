@@ -3,13 +3,21 @@ kind: Ingress
 metadata:
   name: app-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    # REMOVE this line - it's causing the problem
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+    
+    # Keep these
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 spec:
   ingressClassName: nginx
   rules:
   - http:
       paths:
-      # Backend API routes
+      # Backend API routes - will forward /api/* as-is
       - path: /api
         pathType: Prefix
         backend:
@@ -19,7 +27,7 @@ spec:
               number: 5000
       # Socket.IO routes  
       - path: /socket.io
-        pathType: ImplementationSpecific
+        pathType: Prefix  # Changed back to Prefix
         backend:
           service:
             name: backend-service
