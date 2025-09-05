@@ -149,7 +149,7 @@ jobs:
     - name: Wait for Ingress
       run: |
         echo "⏳ Waiting for Ingress to be ready..."
-        kubectl wait --for=condition=Ready ingress/app-ingress --timeout=180s || echo "⚠️ Ingress may still be setting up"
+        kubectl wait --for=condition=Ready ingress/app-ingress --timeout=120s || echo "⚠️ Ingress may still be setting up"
         
         echo "✅ Ingress deployed successfully"
 
