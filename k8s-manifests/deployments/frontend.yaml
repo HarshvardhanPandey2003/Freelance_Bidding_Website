@@ -25,7 +25,7 @@ spec:
             secretProviderClass: "app-secrets-provider"
       containers:
       - name: frontend
-        image: harshvardhan2003/freelance-frontend:latest
+        image: harshvardhan2003/freelance-frontend:8317f839b758806fc9dc07a8a964c67ff5a728dc
         resources:
           requests:
             cpu: "50m"      # Reduced since no Node.js server
