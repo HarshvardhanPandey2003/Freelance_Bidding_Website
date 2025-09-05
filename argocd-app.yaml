@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: freelance-app
+  namespace: argocd
+spec:
+  project: default
+  
+  source:
+    repoURL: 'https://github.com/YOUR_USERNAME/FREELANCE_BIDDING_WEBSITE.git'  # Replace with your repo
+    targetRevision: main
+    path: k8s-manifests
+    
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: default
+    
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - RespectIgnoreDifferences=true  # Important for dynamic updates
+    
+  # Ignore differences in ConfigMaps that get updated dynamically
+  ignoreDifferences:
+  - group: ""
+    kind: ConfigMap
+    name: app-config
+    jsonPointers:
+    - /data/FRONTEND_URL
