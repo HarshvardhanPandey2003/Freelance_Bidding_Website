@@ -159,7 +159,7 @@ jobs:
         echo "🌐 Waiting for LoadBalancer to assign external IP (3 minute timeout)..."
         
         FRONTEND_IP=""
-        for i in {1..18}; do  # 18 × 10 seconds = 3 minutes
+        for i in {1..12}; do  # 12 × 10 seconds = 2 minutes
           FRONTEND_IP=$(kubectl get ingress app-ingress \
             -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
           
