@@ -16,5 +16,5 @@ yarn-error.log*
 *.tmp
 *.temp
 .cache
-git_commands.docx
-documentation.txt
+git_commands
+documentation
