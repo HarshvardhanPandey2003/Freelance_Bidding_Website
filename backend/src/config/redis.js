@@ -4,9 +4,8 @@
 import { createClient } from 'redis';
 
 // Create simple Redis client instead of cluster
-const redisClient = createClient({
-  url: 'redis://redis-service:6379'
-});
+const redisUrl = process.env.REDIS_URI || 'redis://localhost:6379';  // Defaults to local; override with env var in Docker/CI/CD
+const redisClient = createClient({ url: redisUrl });
 
 redisClient.on('error', (err) => console.log('Redis Client Error', err));
 redisClient.on('connect', () => console.log('Connected to Redis'));

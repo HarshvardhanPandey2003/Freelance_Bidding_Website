@@ -3,10 +3,9 @@
 // It helps send requests (like GET, POST) to your backend API and brings back responses.
 import axios from 'axios';
 
-const API_URL=window.location.origin;  // import.meta.env.VITE_API_URL;  // During Development : 
 export const api = axios.create({
-  baseURL: API_URL,
-  withCredentials: true
+  baseURL: '/api',   // relative path -> works with Vite proxy & Ingress
+  withCredentials: true,
 });
 
 // Payment initiation function
