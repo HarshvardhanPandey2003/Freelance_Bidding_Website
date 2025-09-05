@@ -46,18 +46,19 @@ Additional Set of Commands :
 
 git fetch origin
 
-git checkout production
-git pull origin production  # Pull any remote changes
+git checkout prod
+git pull origin prod  # Pull any remote changes
 git reset --hard origin/main  # Reset production to main's exact commit
-git push origin production --force  # Force-push to GitHub (updates remote)
+git push origin prod --force  # Force-push to GitHub (updates remote)
 
-git checkout development
-git pull origin development  # Pull any remote changes
-git reset --hard origin/main  # Reset development to main's exact commit
-git push origin development --force  # Force-push to GitHub
+git checkout dev
+git pull origin dev  # Pull any remote changes
+git reset --hard origin/main  # Reset dev to main's exact commit
+git push origin dev --force  # Force-push to GitHub
 
 git checkout main
 git log --oneline --graph --all  # All branches should point to the same latest commit
 git fetch origin
 git status  # Should show no differences
+
 
