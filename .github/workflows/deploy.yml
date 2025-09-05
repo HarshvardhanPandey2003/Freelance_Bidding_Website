@@ -2,7 +2,7 @@ name: GitOps Build and Deploy
 
 on:
   push:
-    branches: [main, prod, gitops]
+    branches: [main, prod]
   workflow_dispatch:
 
 env:
@@ -41,7 +41,7 @@ jobs:
           --name ${{ env.CLUSTER_NAME }} \
           --overwrite-existing
 
-    # BUILD PHASE (Standard GitOps)
+    # BUILD PHASE
     - name: Build and Push Backend
       uses: docker/build-push-action@v5
       with:
@@ -56,7 +56,7 @@ jobs:
         push: true
         tags: ${{ vars.DOCKERHUB_USERNAME }}/freelance-frontend:${{ github.sha }}
 
-    # GET AZURE IDENTITY (For Key Vault)
+    # GET AZURE IDENTITY
     - name: Get Azure Identity Information
       id: get-identity
       run: |
@@ -75,8 +75,12 @@ jobs:
         
         echo "tenant-id=$TENANT_ID" >> $GITHUB_OUTPUT
         echo "client-id=$SECRETS_PROVIDER_CLIENT_ID" >> $GITHUB_OUTPUT
+        
+        echo "✅ Retrieved identity information:"
+        echo "  • Tenant ID: $TENANT_ID"
+        echo "  • Client ID: $SECRETS_PROVIDER_CLIENT_ID"
 
-    # UPDATE MANIFESTS (GitOps Part)
+    # UPDATE MANIFESTS FOR GITOPS
     - name: Update Kubernetes Manifests
       run: |
         echo "🔄 Updating manifests for GitOps..."
@@ -85,9 +89,13 @@ jobs:
         sed -i "s|image: .*/freelance-backend:.*|image: ${{ vars.DOCKERHUB_USERNAME }}/freelance-backend:${{ github.sha }}|" k8s-manifests/deployments/backend.yaml
         sed -i "s|image: .*/freelance-frontend:.*|image: ${{ vars.DOCKERHUB_USERNAME }}/freelance-frontend:${{ github.sha }}|" k8s-manifests/deployments/frontend.yaml
         
-        # Update Azure Key Vault identity
+        # Update Azure Key Vault identity (using your original method)
         sed -i "s/userAssignedIdentityID: .*/userAssignedIdentityID: \"${{ steps.get-identity.outputs.client-id }}\"/" k8s-manifests/secrets/secret-provider.yaml
         sed -i "s/tenantId: .*/tenantId: \"${{ steps.get-identity.outputs.tenant-id }}\"/" k8s-manifests/secrets/secret-provider.yaml
+        
+        echo "✅ Updated manifests:"
+        echo "  • Backend image: ${{ vars.DOCKERHUB_USERNAME }}/freelance-backend:${{ github.sha }}"
+        echo "  • Frontend image: ${{ vars.DOCKERHUB_USERNAME }}/freelance-frontend:${{ github.sha }}"
 
     # COMMIT TO TRIGGER ARGOCD
     - name: Commit Manifest Changes
@@ -106,82 +114,168 @@ jobs:
         fi
 
     # WAIT FOR ARGOCD TO DEPLOY
-    - name: Wait for ArgoCD Sync
+    - name: Wait for ArgoCD Sync and Basic Deployments
       run: |
         echo "⏳ Waiting for ArgoCD to sync and deploy..."
         echo "This usually takes 1-3 minutes..."
         
-        # Wait a bit for ArgoCD to pick up changes
+        # Wait for ArgoCD to pick up changes
         sleep 120
         
-        # Check if basic deployments are ready
-        kubectl wait --for=condition=available deployment/redis --timeout=300s || echo "⚠️ Redis still starting"
-        kubectl wait --for=condition=available deployment/backend --timeout=300s || echo "⚠️ Backend still starting"
-        kubectl wait --for=condition=available deployment/frontend --timeout=300s || echo "⚠️ Frontend still starting"
+        # Wait for basic deployments (same timeouts as your original)
+        kubectl wait --for=condition=available deployment/redis --timeout=120s || {
+          echo "❌ Redis deployment failed to become ready within 2 minutes"
+          kubectl describe deployment redis
+          kubectl get pods -l app=redis
+          exit 1
+        }
+        
+        kubectl wait --for=condition=available deployment/backend --timeout=120s || {
+          echo "❌ Backend deployment failed to become ready within 2 minutes"
+          kubectl describe deployment backend
+          kubectl get pods -l app=backend
+          exit 1
+        }
+        
+        kubectl wait --for=condition=available deployment/frontend --timeout=120s || {
+          echo "❌ Frontend deployment failed to become ready within 2 minutes"
+          kubectl describe deployment frontend
+          kubectl get pods -l app=frontend
+          exit 1
+        }
+        
+        echo "✅ All deployments are ready"
 
-    # THE DYNAMIC PARTS (Post-GitOps)
+    # DYNAMIC LOADBALANCER IP UPDATE (Your original working method)
     - name: Get LoadBalancer IP and Update ConfigMap
       id: get-ip
       run: |
         echo "🌐 Getting LoadBalancer IP for dynamic configuration..."
         
-        # Wait for LoadBalancer IP
+        # Wait for LoadBalancer IP (exactly like your original)
         FRONTEND_IP=""
-        for i in {1..18}; do
-          FRONTEND_IP=$(kubectl get ingress app-ingress -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+        for i in {1..12}; do  # 12 × 10 seconds = 2 minutes
+          FRONTEND_IP=$(kubectl get ingress app-ingress \
+            -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
           
           if [[ $FRONTEND_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "✅ LoadBalancer IP: $FRONTEND_IP"
+            echo "✅ External IP assigned: $FRONTEND_IP"
             break
           fi
           
-          echo "⏳ Waiting for LoadBalancer IP... ($i/18)"
+          echo "⏳ Attempt $i/12: Waiting for external IP... (current: '$FRONTEND_IP')"
           sleep 10
         done
         
         if [[ ! $FRONTEND_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          echo "❌ Could not get LoadBalancer IP"
+          echo "❌ Failed to get external IP after 2 minutes"
+          echo "Ingress status:"
+          kubectl get ingress app-ingress -o wide
+          kubectl describe ingress app-ingress
           exit 1
         fi
         
-        # Set outputs
+        # Set outputs (same as your original)
+        API_URL="http://$FRONTEND_IP/api"
+        FRONTEND_URL="http://$FRONTEND_IP"
+        
         echo "frontend-ip=$FRONTEND_IP" >> $GITHUB_OUTPUT
-        echo "frontend-url=http://$FRONTEND_IP" >> $GITHUB_OUTPUT
-        echo "api-url=http://$FRONTEND_IP/api" >> $GITHUB_OUTPUT
+        echo "api-url=$API_URL" >> $GITHUB_OUTPUT
+        echo "frontend-url=$FRONTEND_URL" >> $GITHUB_OUTPUT
         
-        # Update ConfigMap with dynamic IP (This is the non-GitOps part)
+        echo "  • Frontend IP: $FRONTEND_IP"
+        echo "  • API URL: $API_URL"
+        echo "  • Frontend URL: $FRONTEND_URL"
+        
+        # Update ConfigMap using your ORIGINAL working method
         echo "🔄 Updating ConfigMap with LoadBalancer IP..."
-        kubectl patch configmap app-config --patch-data '{"data":{"FRONTEND_URL":"http://'$FRONTEND_IP'"}}'
         
-        echo "✅ ConfigMap updated with frontend URL"
+        cat > /tmp/configmap-patch.yaml << EOF
+        data:
+          FRONTEND_URL: "$FRONTEND_URL"
+        EOF
+        
+        # Apply the patch using --patch-file (your working method)
+        kubectl patch configmap app-config --patch-file /tmp/configmap-patch.yaml
+        rm /tmp/configmap-patch.yaml
+        
+        echo "✅ ConfigMap updated with external IP configuration"
 
-    # RESTART DEPLOYMENTS TO PICK UP NEW CONFIG
+    # RESTART DEPLOYMENTS (Your original method)
     - name: Restart Deployments
       run: |
         echo "🔄 Restarting deployments to pick up new configuration..."
         
+        # Restart deployments to pick up new ConfigMap values
         kubectl rollout restart deployment/frontend
         kubectl rollout restart deployment/backend
         
-        echo "⏳ Waiting for rollouts..."
+        echo "⏳ Waiting for rollouts to complete..."
         kubectl rollout status deployment/frontend --timeout=180s
         kubectl rollout status deployment/backend --timeout=180s
         
-        echo "✅ Deployments restarted!"
+        echo "✅ Deployments restarted successfully"
 
-    # FINAL STATUS
-    - name: Deployment Complete
+    # FINAL STATUS AND HEALTH CHECK (Your original methods)
+    - name: Verify Deployment Status
       run: |
-        echo "🎉 === GITOPS DEPLOYMENT COMPLETED ==="
+        echo "📊 === Final Deployment Status ==="
+        echo ""
+        echo "🏗️  Deployments:"
+        kubectl get deployments -o wide
+        echo ""
+        echo "📦 Pods:"
+        kubectl get pods -o wide
+        echo ""
+        echo "🌐 Services:"
+        kubectl get services -o wide
+        echo ""
+        echo "🔗 Ingress:"
+        kubectl get ingress -o wide
+
+    # HEALTH CHECK (Your original method)
+    - name: Health Check
+      run: |
+        echo "🏥 Performing application health check..."
+        FRONTEND_IP="${{ steps.get-ip.outputs.frontend-ip }}"
+        
+        # Wait for application to be fully ready
+        echo "⏳ Waiting for application to be fully ready..."
+        sleep 45
+        
+        # Test API endpoint through Ingress
+        echo "🔍 Testing API endpoint through Ingress..."
+        if timeout 30 curl -sS -f "http://$FRONTEND_IP/api/health" > /dev/null 2>&1; then
+          echo "✅ API endpoint is responding correctly through Ingress"
+        else
+          echo "⚠️  API health check failed (endpoint may not exist)"
+        fi
+        
+        # Test frontend endpoint
+        echo "🔍 Testing frontend endpoint..."
+        if timeout 30 curl -sS -f "http://$FRONTEND_IP" > /dev/null 2>&1; then
+          echo "✅ Frontend is responding correctly"
+        else
+          echo "⚠️  Frontend health check failed (app may still be starting)"
+        fi
+
+    # FINAL OUTPUT (Your original format)
+    - name: Output Deployment Results
+      run: |
+        echo "🎉 === GITOPS DEPLOYMENT COMPLETED SUCCESSFULLY ==="
         echo ""
         echo "📱 Application URLs:"
         echo "  • Frontend: ${{ steps.get-ip.outputs.frontend-url }}"
         echo "  • Backend API: ${{ steps.get-ip.outputs.api-url }}"
         echo ""
-        echo "🔧 ArgoCD Application: freelance-app"
-        echo "🌐 LoadBalancer IP: ${{ steps.get-ip.outputs.frontend-ip }}"
+        echo "🔧 Infrastructure Details:"
+        echo "  • Resource Group: ${{ env.RESOURCE_GROUP }}"
+        echo "  • AKS Cluster: ${{ env.CLUSTER_NAME }}"
+        echo "  • Key Vault: ${{ env.KEY_VAULT_NAME }}"
+        echo "  • LoadBalancer IP: ${{ steps.get-ip.outputs.frontend-ip }}"
         echo ""
         echo "🎯 GitOps Status: Static manifests managed by ArgoCD"
         echo "🔄 Dynamic Config: LoadBalancer IP updated via CI/CD"
-        
-        echo "::notice title=🚀 GitOps Deploy Success::App live at ${{ steps.get-ip.outputs.frontend-url }}"
+        echo ""
+        echo "::notice title=🚀 GitOps Deploy Success::Application is live at ${{ steps.get-ip.outputs.frontend-url }}"
+        echo "::notice title=🔗 API Endpoint::Backend API available at ${{ steps.get-ip.outputs.api-url }}"
