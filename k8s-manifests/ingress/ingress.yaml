@@ -1,3 +1,4 @@
+# Freelance_Bidding_Website\k8s-manifests\ingress\ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
