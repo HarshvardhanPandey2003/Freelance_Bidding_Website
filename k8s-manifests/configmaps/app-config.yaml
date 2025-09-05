@@ -11,6 +11,6 @@ data:
   
   # Frontend non-sensitive configs  
   FRONTEND_URL: "https://yourapp.azurewebsites.net"  # Update for production
-  VITE_API_URL: "https://api.yourapp.com/"           # Update for production
-  REACT_APP_API_BASE_URL: "https://api.yourapp.com/api"  # Update for production
-  BACKEND_API_URL: "20.195.111.79"
+  # VITE_API_URL: "https://api.yourapp.com/"           # Update for production
+  # REACT_APP_API_BASE_URL: "https://api.yourapp.com/api"  # Update for production
+  # BACKEND_API_URL: "api.yourapp.com"

@@ -25,3 +25,17 @@ docker-compose up --build -d
 
 # Check running containers
 docker-compose ps
+
+Old Patching configuration :
+
+        # Create patch file for cleaner configuration updates
+        cat > /tmp/configmap-patch.yaml << EOF
+        data:
+          VITE_API_URL: "$API_URL"
+          REACT_APP_API_BASE_URL: "$API_URL"
+          FRONTEND_URL: "$FRONTEND_URL"
+          BACKEND_API_URL: "http://backend-service:5000"
+          REDIS_URI: "redis://redis-service:6379"
+          NODE_ENV: "prod"
+          JWT_EXPIRES_IN: "7d"
+        EOF

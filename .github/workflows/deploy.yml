@@ -120,22 +120,22 @@ jobs:
         echo "⏳ Waiting for deployments to be ready (3 minute timeout)..."
         
         # Wait for deployments to be available with detailed error handling
-        kubectl wait --for=condition=available deployment/redis --timeout=180s || {
-          echo "❌ Redis deployment failed to become ready within 3 minutes"
+        kubectl wait --for=condition=available deployment/redis --timeout=120s || {
+          echo "❌ Redis deployment failed to become ready within 2 minutes"
           kubectl describe deployment redis
           kubectl get pods -l app=redis
           exit 1
         }
         
-        kubectl wait --for=condition=available deployment/backend --timeout=180s || {
-          echo "❌ Backend deployment failed to become ready within 3 minutes"
+        kubectl wait --for=condition=available deployment/backend --timeout=120s || {
+          echo "❌ Backend deployment failed to become ready within 2 minutes"
           kubectl describe deployment backend
           kubectl get pods -l app=backend
           exit 1
         }
         
-        kubectl wait --for=condition=available deployment/frontend --timeout=180s || {
-          echo "❌ Frontend deployment failed to become ready within 3 minutes"
+        kubectl wait --for=condition=available deployment/frontend --timeout=120s || {
+          echo "❌ Frontend deployment failed to become ready within 2 minutes"
           kubectl describe deployment frontend
           kubectl get pods -l app=frontend
           exit 1
@@ -201,13 +201,7 @@ jobs:
         # Create patch file for cleaner configuration updates
         cat > /tmp/configmap-patch.yaml << EOF
         data:
-          VITE_API_URL: "$API_URL"
-          REACT_APP_API_BASE_URL: "$API_URL"
           FRONTEND_URL: "$FRONTEND_URL"
-          BACKEND_API_URL: "http://backend-service:5000"
-          REDIS_URI: "redis://redis-service:6379"
-          NODE_ENV: "prod"
-          JWT_EXPIRES_IN: "7d"
         EOF
         
         # Apply the patch
