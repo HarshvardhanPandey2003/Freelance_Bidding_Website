@@ -1,5 +1,5 @@
 
-# Freelance Bidding Platform
+# FreelanceHub Connect
 
 A full-stack freelance bidding platform enabling real-time auctions, fast project search, and secure payments. Built using the MERN stack with Socket.io, Redis Pub/Sub, and Razorpay for real-time communication, accelerated search, and seamless payments. Deployed on Azure Kubernetes Service (AKS) with automated CI/CD pipelines for scalability and streamlined development workflow.
 
