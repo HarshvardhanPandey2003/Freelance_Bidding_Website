@@ -1,8 +1,11 @@
+# .github/workflows/deploy.yml
 name: Deploy to AKS
 
 on:
   push:
-    branches: [ main ]
+    branches:  
+      - main
+      - prod 
   workflow_dispatch:
 
 env:
