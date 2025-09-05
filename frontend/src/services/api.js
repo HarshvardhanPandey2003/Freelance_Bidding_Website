@@ -3,8 +3,10 @@
 // It helps send requests (like GET, POST) to your backend API and brings back responses.
 import axios from 'axios';
 
+const baseURL = window.location.origin;
+
 export const api = axios.create({
-  baseURL: '/api',   // relative path -> works with Vite proxy & Ingress
+  baseURL,  // Now absolute, e.g., 'http://localhost:3000/api'
   withCredentials: true,
 });
 
