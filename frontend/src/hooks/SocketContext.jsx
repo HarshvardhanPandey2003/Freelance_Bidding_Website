@@ -12,22 +12,19 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      // Automatically choose URL based on environment
-      // const socketUrl = import.meta.env.PROD 
-      //   ? window.location.origin 
-      //   : import.meta.env.VITE_API_URL;
-      const socketUrl = window.location.origin 
+      // Don't pass an explicit origin URL — let socket.io default to current origin.
+      // Explicitly set the socket path so it goes through Vite proxy in dev or Ingress in prod.
+      console.log(`Socket connecting to origin: ${typeof window !== 'undefined' ? window.location.origin : 'unknown' } (Production: ${import.meta.env.PROD})`);
 
-      console.log(`Socket connecting to: ${socketUrl} (Production: ${import.meta.env.PROD})`);
-      // When you write io (), it tries to connect to the server with /socket.io by default 
-      // As in the backend in app.js we have wrapped the socket.io server around the same HTTP server as express
-      const socketInstance = io(socketUrl, {
+      const socketInstance = io(undefined, {
+        path: '/socket.io',
         withCredentials: true,
-        auth: { userId: user._id },  // This has USER AUTH - important!
+        auth: { userId: user._id },  // user auth payload
         reconnection: true, // AUTO-RECONNECT if connection drops
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,
-        timeout: 20000
+        timeout: 20000,
+        transports: ['websocket'],
       });
 
       socketInstance.on('connect', () => {
@@ -41,15 +38,14 @@ export const SocketProvider = ({ children }) => {
       });
 
       socketInstance.on('connect_error', (err) => {
-        console.error('Socket connection error:', err.message);
+        console.error('Socket connection error:', err?.message ?? err);
         setIsConnected(false);
       });
 
-      setSocket(socketInstance);  // Keeps socket alive in state constently
-        // Stores in React state and ALSO stores in socket.js for others to use
+      setSocket(socketInstance);
 
       return () => {
-        socketInstance.disconnect(); // Only disconnects when user logs out
+        socketInstance.disconnect();
         setIsConnected(false);
       };
     } else {

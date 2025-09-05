@@ -1,25 +1,28 @@
 // frontend/src/services/socket.js
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = window.location.origin;
+const SOCKET_PATH = '/socket.io';
 
-let socket = null;  // Just a storage variable
+let socket = null;  // module-scoped storage
 
-// Create a socket with this token IF none exists , used when socket connection is needed
-export const initSocket = (token) => { 
+// Create a socket with this token IF none exists
+export const initSocket = (token) => {
   if (!socket) {
-    socket = io(SOCKET_URL, {
+    // Do not pass an explicit URL — let it default to current origin.
+    socket = io(undefined, {
+      path: SOCKET_PATH,
       withCredentials: true,
       auth: { token },
-      extraHeaders: { withCredentials: true },
+      transports: ['websocket'],
+      timeout: 20000,
     });
   }
   return socket;
 };
 
-export const getSocket = () => socket;  // Get current socket
+export const getSocket = () => socket;
 
-export const setSocket = (socketInstance) => {  // Store this socket in the SocketContext so that others can access it
+export const setSocket = (socketInstance) => {
   socket = socketInstance;
 };
 
