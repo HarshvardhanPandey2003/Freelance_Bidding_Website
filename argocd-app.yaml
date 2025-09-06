@@ -29,7 +29,7 @@ spec:
       - PrunePropagationPolicy=foreground
       - PruneLast=false       # Prune first, then apply
       - RespectIgnoreDifferences=true 
-      # REMOVED: ApplyOutOfSyncOnly=true (prevents initial deployment)
+      
 
   ignoreDifferences:
     - group: ""
