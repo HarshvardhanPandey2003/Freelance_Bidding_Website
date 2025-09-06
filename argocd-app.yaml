@@ -27,14 +27,6 @@ spec:
     - PrunePropagationPolicy=foreground
     - PruneLast=true                 # Prune resources after sync
     - Replace=false                  # Use strategic merge instead of replace
-
-      # Add retry configuration for faster failure recovery
-  retry:
-    limit: 3
-    backoff:
-      duration: "5s"
-      factor: 2
-      maxDuration: "30s"
       
   ignoreDifferences:
   - group: ""
