@@ -26,7 +26,7 @@ spec:
             secretProviderClass: "app-secrets-provider"
       containers:
       - name: backend
-        image: harshvardhan2003/freelance-backend:ee372a733bda74112d604c3f7502107c14c0a82a
+        image: harshvardhan2003/freelance-backend:ad883064d8d9e2a6b27a5a37175e3943a5b6384c
         resources:
           requests:
             cpu: "100m"      # Reduced from 500m
