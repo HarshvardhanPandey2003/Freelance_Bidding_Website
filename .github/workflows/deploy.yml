@@ -100,7 +100,7 @@ jobs:
     # COMMIT TO TRIGGER ARGOCD
     - name: Commit Manifest Changes
       run: |
-      # This is used for getting the info of the user in git commiting the changes
+        # This is used for getting the info of the user in git commiting the changes
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         
