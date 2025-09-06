@@ -2,7 +2,7 @@ name: GitOps Build and Deploy
 
 on:
   push:
-    branches: [main, prod, gitops]
+    branches: [gitops]
   workflow_dispatch:
 
 env:
@@ -130,7 +130,7 @@ jobs:
           SYNC_STATUS=$(kubectl get application freelance-app -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || echo "Unknown")
           HEALTH_STATUS=$(kubectl get application freelance-app -n argocd -o jsonpath='{.status.health.status}' 2>/dev/null || echo "Unknown")
           
-          echo "📊 Attempt $i/20: Sync: $SYNC_STATUS, Health: $HEALTH_STATUS"
+          echo "📊 Attempt $i/12: Sync: $SYNC_STATUS, Health: $HEALTH_STATUS"
           
           if [[ "$SYNC_STATUS" == "Synced" && "$HEALTH_STATUS" == "Healthy" ]]; then
             echo "✅ ArgoCD sync completed successfully!"
