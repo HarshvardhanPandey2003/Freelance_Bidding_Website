@@ -1,0 +1,39 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: freelance-app
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/refresh: hard    # Force hard refresh on creation
+    argocd.argoproj.io/sync: force      # Force initial sync
+spec:
+  project: default
+
+  source:
+    repoURL: "https://github.com/HarshvardhanPandey2003/Freelance_Bidding_Website.git"
+    targetRevision: prod
+    path: k8s-manifests
+
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: default
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false       # KEY FIX: Don't allow empty syncs
+    syncOptions:
+      - CreateNamespace=true
+      - Replace=false         # Use kubectl apply, not replace
+      - PrunePropagationPolicy=foreground
+      - PruneLast=false       # Prune first, then apply
+      - RespectIgnoreDifferences=true 
+      
+
+  ignoreDifferences:
+    - group: ""
+      kind: ConfigMap
+      name: app-config
+      jsonPointers:
+        - /data/FRONTEND_URL

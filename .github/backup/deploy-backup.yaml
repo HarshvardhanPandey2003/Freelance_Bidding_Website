@@ -1,0 +1,294 @@
+# .github/workflows/deploy.yml
+name: Deploy to AKS
+
+on:
+  push:
+    branches:  
+      - main
+      - prod 
+  workflow_dispatch:
+
+env:
+  RESOURCE_GROUP: ${{ vars.RESOURCE_GROUP || 'hvp-aks' }}
+  CLUSTER_NAME: ${{ vars.CLUSTER_NAME || 'freelance-aks' }}
+  KEY_VAULT_NAME: ${{ vars.KEY_VAULT_NAME || 'freelance-app-kv-2025' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ vars.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+
+    - name: Get AKS credentials
+      run: |
+        az aks get-credentials \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.CLUSTER_NAME }} \
+          --overwrite-existing
+
+    - name: Get Azure Identity Information
+      id: get-identity
+      run: |
+        echo "🔍 Retrieving Azure identity information..."
+        
+        SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+        NODE_RG=$(az aks show \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.CLUSTER_NAME }} \
+          --query nodeResourceGroup -o tsv)
+        TENANT_ID=$(az account show --query tenantId -o tsv)
+        
+        # Get the secrets provider identity with better error handling
+        SECRETS_PROVIDER_CLIENT_ID=$(az identity list \
+          --resource-group $NODE_RG \
+          --query "[?contains(name, 'azurekeyvaultsecretsprovider')].clientId" \
+          -o tsv)
+        
+        if [ -z "$SECRETS_PROVIDER_CLIENT_ID" ]; then
+          echo "❌ Error: Could not find azurekeyvaultsecretsprovider identity"
+          echo "Available identities:"
+          az identity list --resource-group $NODE_RG --query "[].{Name:name, ClientId:clientId}" -o table
+          exit 1
+        fi
+        
+        # Set outputs for other steps to use
+        echo "tenant-id=$TENANT_ID" >> $GITHUB_OUTPUT
+        echo "client-id=$SECRETS_PROVIDER_CLIENT_ID" >> $GITHUB_OUTPUT
+        echo "subscription-id=$SUBSCRIPTION_ID" >> $GITHUB_OUTPUT
+        echo "node-rg=$NODE_RG" >> $GITHUB_OUTPUT
+        
+        echo "✅ Retrieved identity information:"
+        echo "  • Tenant ID: $TENANT_ID"
+        echo "  • Client ID: $SECRETS_PROVIDER_CLIENT_ID"
+        echo "  • Node RG: $NODE_RG"
+
+    - name: Update Secret Provider Class
+      run: |
+        echo "🔧 Updating secret-provider.yaml with identity information..."
+        
+        # Update secret-provider.yaml with actual values
+        sed -i "s/userAssignedIdentityID: .*/userAssignedIdentityID: \"${{ steps.get-identity.outputs.client-id }}\"/" k8s-manifests/secrets/secret-provider.yaml
+        sed -i "s/tenantId: .*/tenantId: \"${{ steps.get-identity.outputs.tenant-id }}\"/" k8s-manifests/secrets/secret-provider.yaml
+        
+        echo "✅ Updated secret-provider.yaml"
+        echo "  • User Assigned Identity ID: ${{ steps.get-identity.outputs.client-id }}"
+        echo "  • Tenant ID: ${{ steps.get-identity.outputs.tenant-id }}"
+
+    - name: Deploy ConfigMaps and Secrets
+      run: |
+        echo "📦 Deploying ConfigMaps and Secrets..."
+        
+        kubectl apply -f k8s-manifests/configmaps/app-config.yaml
+        kubectl apply -f k8s-manifests/secrets/secret-provider.yaml
+        kubectl apply -f k8s-manifests/secrets/service-account.yaml
+        kubectl apply -f k8s-manifests/ingress/ingress.yaml
+        
+        # Wait for secret provider to be ready
+        echo "⏳ Waiting for secrets store CSI driver to be ready..."
+        kubectl wait --for=condition=Ready pod \
+          -l app=secrets-store-csi-driver \
+          --timeout=120s \
+          -n kube-system || echo "⚠️ CSI driver pods may still be starting"
+        
+        echo "✅ Deployed ConfigMaps, Secrets, and Ingress"
+
+    - name: Deploy Applications
+      run: |
+        echo "🚀 Deploying applications..."
+        
+        kubectl apply -f k8s-manifests/deployments/redis.yaml
+        kubectl apply -f k8s-manifests/deployments/backend.yaml
+        kubectl apply -f k8s-manifests/deployments/frontend.yaml
+        
+        echo "✅ Application manifests deployed"
+
+    - name: Wait for Deployments
+      run: |
+        echo "⏳ Waiting for deployments to be ready (3 minute timeout)..."
+        
+        # Wait for deployments to be available with detailed error handling
+        kubectl wait --for=condition=available deployment/redis --timeout=120s || {
+          echo "❌ Redis deployment failed to become ready within 2 minutes"
+          kubectl describe deployment redis
+          kubectl get pods -l app=redis
+          exit 1
+        }
+        
+        kubectl wait --for=condition=available deployment/backend --timeout=120s || {
+          echo "❌ Backend deployment failed to become ready within 2 minutes"
+          kubectl describe deployment backend
+          kubectl get pods -l app=backend
+          exit 1
+        }
+        
+        kubectl wait --for=condition=available deployment/frontend --timeout=120s || {
+          echo "❌ Frontend deployment failed to become ready within 2 minutes"
+          kubectl describe deployment frontend
+          kubectl get pods -l app=frontend
+          exit 1
+        }
+        
+        echo "✅ All deployments are ready"
+        
+    - name: Get Ingress IP
+      id: get-ip
+      run: |
+        echo "🌐 Waiting for LoadBalancer to assign external IP (3 minute timeout)..."
+        
+        FRONTEND_IP=""
+        for i in {1..12}; do  # 12 × 10 seconds = 2 minutes
+          FRONTEND_IP=$(kubectl get ingress app-ingress \
+            -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+          
+          if [[ $FRONTEND_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "✅ External IP assigned: $FRONTEND_IP"
+            break
+          fi
+          
+          echo "⏳ Attempt $i/18: Waiting for external IP... (current: '$FRONTEND_IP')"
+          sleep 10
+        done
+        
+        if [[ ! $FRONTEND_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "❌ Failed to get external IP after 3 minutes"
+          echo "Ingress status:"
+          kubectl get ingress app-ingress -o wide
+          kubectl describe ingress app-ingress
+          # Fallback: try getting IP from ingress-nginx service
+          echo "Trying ingress-nginx service..."
+          kubectl get service ingress-nginx-controller -n ingress-nginx -o wide
+          exit 1
+        fi
+        
+        # Set output for other steps to use
+        echo "frontend-ip=$FRONTEND_IP" >> $GITHUB_OUTPUT
+        echo "api-url=http://$FRONTEND_IP/api" >> $GITHUB_OUTPUT
+        echo "frontend-url=http://$FRONTEND_IP" >> $GITHUB_OUTPUT
+
+    - name: Update ConfigMap with External IP
+      run: |
+        echo "🔄 Updating ConfigMap with LoadBalancer IP..."
+        
+        # Use the output from get-ip step (no repeated kubectl calls)
+        FRONTEND_IP="${{ steps.get-ip.outputs.frontend-ip }}"
+        API_URL="${{ steps.get-ip.outputs.api-url }}"
+        FRONTEND_URL="${{ steps.get-ip.outputs.frontend-url }}"
+        
+        echo "  • Frontend IP: $FRONTEND_IP"
+        echo "  • API URL: $API_URL"
+        echo "  • Frontend URL: $FRONTEND_URL"
+        
+        # Create patch file for cleaner configuration updates
+        cat > /tmp/configmap-patch.yaml << EOF
+        data:
+          FRONTEND_URL: "$FRONTEND_URL"
+        EOF
+        
+        # Apply the patch
+        kubectl patch configmap app-config --patch-file /tmp/configmap-patch.yaml
+        rm /tmp/configmap-patch.yaml
+        
+        echo "✅ ConfigMap updated with external IP configuration"
+
+    - name: Restart Deployments
+      run: |
+        echo "🔄 Restarting deployments to pick up new configuration..."
+        
+        # Restart deployments to pick up new ConfigMap values
+        kubectl rollout restart deployment/frontend
+        kubectl rollout restart deployment/backend
+        
+        echo "⏳ Waiting for rollouts to complete..."
+        kubectl rollout status deployment/frontend --timeout=180s
+        kubectl rollout status deployment/backend --timeout=180s
+        
+        echo "✅ Deployments restarted successfully"
+
+    - name: Verify Deployment Status
+      run: |
+        echo "📊 === Final Deployment Status ==="
+        echo ""
+        echo "🏗️  Deployments:"
+        kubectl get deployments -o wide
+        echo ""
+        echo "📦 Pods:"
+        kubectl get pods -o wide
+        echo ""
+        echo "🌐 Services:"
+        kubectl get services -o wide
+        echo ""
+        echo "🔗 Ingress:"
+        kubectl get ingress -o wide
+        echo ""
+        echo "🔐 Secrets:"
+        kubectl get secretproviderclass -o wide
+
+    - name: Health Check
+      run: |
+        echo "🏥 Performing application health check..."
+        # Use the stored IP from get-ip step output
+        FRONTEND_IP="${{ steps.get-ip.outputs.frontend-ip }}"
+        
+        # Wait for application to be fully ready
+        echo "⏳ Waiting for application to be fully ready..."
+        sleep 45
+        
+        # Test API endpoint through Ingress
+        echo "🔍 Testing API endpoint through Ingress..."
+        if timeout 30 curl -sS -f "http://$FRONTEND_IP/api/health" > /dev/null 2>&1; then
+          echo "✅ API endpoint is responding correctly through Ingress"
+        else
+          echo "⚠️  API health check failed (endpoint may not exist)"
+        fi
+        
+        # Test frontend endpoint
+        echo "🔍 Testing frontend endpoint..."
+        if timeout 30 curl -sS -f "http://$FRONTEND_IP" > /dev/null 2>&1; then
+          echo "✅ Frontend is responding correctly"
+        else
+          echo "⚠️  Frontend health check failed (app may still be starting)"
+          echo "This is often normal for initial deployments"
+        fi
+        
+        # Test if backend service is accessible internally
+        echo "🔍 Checking backend service availability..."
+        kubectl run test-curl --image=curlimages/curl:latest --rm -i --restart=Never \
+          --command -- curl -sS -f "http://backend-service:5000/health" || \
+          echo "⚠️  Backend health endpoint not available (may not be implemented)"
+        
+        # Check ingress routing
+        echo "🔍 Verifying Ingress configuration..."
+        kubectl describe ingress app-ingress
+
+    - name: Output Deployment Results
+      run: |
+        echo "🎉 === DEPLOYMENT COMPLETED SUCCESSFULLY ==="
+        echo ""
+        echo "📱 Application URLs:"
+        echo "  • Frontend: ${{ steps.get-ip.outputs.frontend-url }}"
+        echo "  • Backend API: ${{ steps.get-ip.outputs.api-url }}"
+        echo ""
+        echo "🔧 Infrastructure Details:"
+        echo "  • Resource Group: ${{ env.RESOURCE_GROUP }}"
+        echo "  • AKS Cluster: ${{ env.CLUSTER_NAME }}"
+        echo "  • Key Vault: ${{ env.KEY_VAULT_NAME }}"
+        echo "  • LoadBalancer IP: ${{ steps.get-ip.outputs.frontend-ip }}"
+        echo ""
+        echo "::notice title=🚀 Deployment Success::Application is live at ${{ steps.get-ip.outputs.frontend-url }}"
+        echo "::notice title=🔗 API Endpoint::Backend API available at ${{ steps.get-ip.outputs.api-url }}"
