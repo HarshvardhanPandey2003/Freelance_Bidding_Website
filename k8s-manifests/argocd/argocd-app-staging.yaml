@@ -11,7 +11,7 @@ spec:
 
   source:
     repoURL: "https://github.com/HarshvardhanPandey2003/Freelance_Bidding_Website.git"
-    targetRevision: gitops
+    targetRevision: prod
     path: k8s-manifests
 
   destination:
