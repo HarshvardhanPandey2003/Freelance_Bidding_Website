@@ -23,7 +23,7 @@ spec:
       - CreateNamespace=true
       - RespectIgnoreDifferences=true
 
-  ignoreDifferences:       # Ignore auto-generated/dynamic values
+  ignoreDifferences:       # Ignore auto-generated/dynamic 
     - group: ""
       kind: ConfigMap
       name: app-config
