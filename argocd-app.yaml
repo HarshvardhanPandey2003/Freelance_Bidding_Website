@@ -7,7 +7,7 @@ spec:
   project: default
 
   source:
-    repoURL: "https://github.com/YOUR_USERNAME/FREELANCE_BIDDING_WEBSITE.git" # Git repo containing manifests
+    repoURL: "https://github.com/HarshvardhanPandey2003/Freelance_Bidding_Website.git" # Git repo containing manifests
     targetRevision: gitops   # Branch to watch
     path: k8s-manifests    # Folder containing Kubernetes manifests
 
