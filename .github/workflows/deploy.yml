@@ -116,42 +116,48 @@ jobs:
           echo "✅ Manifests committed - ArgoCD will sync!"
         fi
 
-    # WAIT FOR ARGOCD TO DEPLOY - OPTIMIZED VERSION
     - name: Wait for ArgoCD Sync and Deployment
       run: |
-        echo "⏳ Waiting for ArgoCD to detect and sync changes..."
+        echo "⏳ Waiting for ArgoCD to sync with forced refresh..."
         
-        # Wait for ArgoCD to detect changes (reduced from 120s)
+        # Give ArgoCD time to detect the new application
         sleep 30
         
-        # Check ArgoCD sync status
-        echo "🔍 Checking ArgoCD application status..."
-        for i in {1..12}; do  # 2 minutes max
+        # Check both ArgoCD status AND actual resources
+        for i in {1..15}; do  # Increased attempts
           SYNC_STATUS=$(kubectl get application freelance-app -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || echo "Unknown")
           HEALTH_STATUS=$(kubectl get application freelance-app -n argocd -o jsonpath='{.status.health.status}' 2>/dev/null || echo "Unknown")
           
-          echo "📊 Attempt $i/12: Sync: $SYNC_STATUS, Health: $HEALTH_STATUS"
+          # Check if actual resources exist
+          REDIS_COUNT=$(kubectl get deployment redis --ignore-not-found -o name | wc -l)
+          BACKEND_COUNT=$(kubectl get deployment backend --ignore-not-found -o name | wc -l)
+          FRONTEND_COUNT=$(kubectl get deployment frontend --ignore-not-found -o name | wc -l)
+          TOTAL_RESOURCES=$((REDIS_COUNT + BACKEND_COUNT + FRONTEND_COUNT))
           
-          if [[ "$SYNC_STATUS" == "Synced" && "$HEALTH_STATUS" == "Healthy" ]]; then
-            echo "✅ ArgoCD sync completed successfully!"
+          echo "📊 Attempt $i/15: Sync: $SYNC_STATUS, Health: $HEALTH_STATUS, Resources: $TOTAL_RESOURCES/3"
+          
+          if [[ "$SYNC_STATUS" == "Synced" && "$HEALTH_STATUS" == "Healthy" && $TOTAL_RESOURCES -eq 3 ]]; then
+            echo "✅ ArgoCD sync completed and all resources exist!"
             break
           fi
           
-          if [[ "$SYNC_STATUS" == "OutOfSync" ]]; then
-            echo "🔄 ArgoCD detected changes, syncing..."
+          if [[ $TOTAL_RESOURCES -eq 0 && $i -gt 5 ]]; then
+            echo "🔄 No resources found, checking ArgoCD status..."
+            kubectl describe application freelance-app -n argocd | tail -10
           fi
           
-          sleep 15
+          sleep 20  # Slightly longer wait
         done
         
-        # Verify deployments are ready (reduced timeouts)
-        echo "🔍 Verifying deployment readiness..."
-        kubectl wait --for=condition=available deployment/redis --timeout=90s
-        kubectl wait --for=condition=available deployment/backend --timeout=90s  
-        kubectl wait --for=condition=available deployment/frontend --timeout=90s
+        # Final verification
+        echo "🔍 Final deployment check..."
+        kubectl get deployments -o wide
         
-        echo "✅ All deployments are ready"
-
+        # Wait for deployments to be ready
+        kubectl wait --for=condition=available deployment/redis --timeout=120s
+        kubectl wait --for=condition=available deployment/backend --timeout=120s  
+        kubectl wait --for=condition=available deployment/frontend --timeout=120s
+        
     # DYNAMIC LOADBALANCER IP UPDATE (Your original working method)
     - name: Get LoadBalancer IP and Update ConfigMap
       id: get-ip
