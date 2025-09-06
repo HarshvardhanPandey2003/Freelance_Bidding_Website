@@ -8,7 +8,7 @@ spec:
 
   source:
     repoURL: "https://github.com/YOUR_USERNAME/FREELANCE_BIDDING_WEBSITE.git" # Git repo containing manifests
-    targetRevision: main   # Branch to watch
+    targetRevision: gitops   # Branch to watch
     path: k8s-manifests    # Folder containing Kubernetes manifests
 
   destination:
