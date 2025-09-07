@@ -1,8 +1,7 @@
 name: GitOps Build and Deploy
-
 on:
   push:
-    branches: [prod]
+    branches: [main]
   workflow_dispatch:
 
 env:
