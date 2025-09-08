@@ -6,7 +6,7 @@ on:
     paths: ['k8s-manifests/**', '.github/workflows/**']
   push:
     branches: [main, prod]
-    paths: ['k8s-manifests/**']
+    paths: ['k8s-manifests/**', '.github/workflows/**']
 
 jobs:
   validate-manifests:
