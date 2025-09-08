@@ -14,8 +14,6 @@ spec:
       labels:
         app: redis
     spec:
-      # nodeSelector:
-      #   agentpool: redis 
       containers:
       - name: redis
         image: redis:7-alpine
