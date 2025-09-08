@@ -3,7 +3,7 @@ name: GitOps Manifest Validation
 on:
   pull_request:
     branches: [main, prod]
-    paths: ['k8s-manifests/**', '.github/workflows/validate-manifests.yml']
+    paths: ['k8s-manifests/**', '.github/workflows/**']
   push:
     branches: [main, prod]
     paths: ['k8s-manifests/**']
