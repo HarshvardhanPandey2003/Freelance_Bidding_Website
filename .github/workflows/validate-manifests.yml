@@ -5,7 +5,7 @@ on:
     branches: [main, prod]
     paths: ['k8s-manifests/**']
   push:
-    branches: [main,prod]
+    branches: [main, prod]
     paths: ['k8s-manifests/**']
 
 jobs:
@@ -73,15 +73,21 @@ jobs:
         # Extract app labels from deployments
         BACKEND_LABEL=$(grep -A 10 "selector:" k8s-manifests/deployments/backend.yaml | grep "app:" | awk '{print $2}')
         FRONTEND_LABEL=$(grep -A 10 "selector:" k8s-manifests/deployments/frontend.yaml | grep "app:" | awk '{print $2}')
+        REDIS_LABEL=$(grep -A 10 "selector:" k8s-manifests/deployments/redis.yaml | grep "app:" | awk '{print $2}')  # Added for Redis
         
-        # Check if services match
-        if ! grep -q "app: $BACKEND_LABEL" k8s-manifests/deployments/backend.yaml; then
+        # Check if services match (update paths if services are separate)
+        if ! grep -q "app: $BACKEND_LABEL" k8s-manifests/services/backend-service.yaml; then  # Change to actual service file
           echo "❌ Backend service selector doesn't match deployment"
           exit 1
         fi
         
-        if ! grep -q "app: $FRONTEND_LABEL" k8s-manifests/deployments/frontend.yaml; then
+        if ! grep -q "app: $FRONTEND_LABEL" k8s-manifests/services/frontend-service.yaml; then
           echo "❌ Frontend service selector doesn't match deployment"
+          exit 1
+        fi
+        
+        if ! grep -q "app: $REDIS_LABEL" k8s-manifests/deployments/redis.yaml; then  # For combined file like Redis
+          echo "❌ Redis service selector doesn't match deployment"
           exit 1
         fi
         
