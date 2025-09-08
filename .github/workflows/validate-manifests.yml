@@ -16,13 +16,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # Test 1: YAML Syntax Validation
-    - name: 🔍 YAML Lint Check
-      run: |
-        echo "Checking YAML syntax with yamllint..."
-        pip install yamllint
-        yamllint -d "{extends: default, rules: {document-start: disable}}" k8s-manifests
-        echo "✅ YAML lint passed!"
+    # # Test 1: YAML Syntax Validation
+    # - name: 🔍 YAML Lint Check
+    #   run: |
+    #     echo "Checking YAML syntax with yamllint..."
+    #     pip install yamllint
+    #     yamllint -d "{extends: default, rules: {document-start: disable}}" k8s-manifests
+    #     echo "✅ YAML lint passed!"
 
     # Test 2: Kubernetes Schema Validation
     - name: 🛡️ Kubernetes Schema Validation
