@@ -77,7 +77,12 @@ A full-stack freelance bidding platform enabling real-time auctions, fast projec
    NODE_ENV=development  
    ```  
 
-   For the frontend `.env`, include FRONTEND_URL as the frontend Port for CORS.
+   For the frontend `.env`,
+   🔐 Sample Frontend .env  
+   ```
+    # Frontend URL for CORS  
+      FRONTEND_URL=your_url
+   ```  
 
    After setup, run the backend with `npm run dev` and the frontend with `npm start`.
 
