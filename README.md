@@ -1,31 +1,33 @@
 
 # FreelanceHub Connect
 
-A full-stack freelance bidding platform enabling real-time auctions, fast project search, and secure payments. Built using the MERN stack with Socket.io, Redis Pub/Sub, and Razorpay for real-time communication, accelerated search, and seamless payments. Deployed on Azure Kubernetes Service (AKS) with automated CI/CD pipelines for scalability and streamlined development workflow.
+A full-stack freelance bidding platform enabling real-time auctions, fast project search, and secure payments. Built using the MERN stack with Socket.io, Redis Pub/Sub, and Razorpay for real-time communication, accelerated search, and seamless payments. Deployed on Azure Kubernetes Service (AKS) with GitOps via ArgoCD, monitoring via Prometheus + Grafana, and automated CI/CD pipelines for scalability, reliability, and streamlined development workflow.
 
 ## 🔧 Key Features
 
-- ⚡ **Real-Time Bidding**: Sub-200 ms latency updates using Socket.io with Redis Pub/Sub for scalable real-time communication across multiple server instances.
-- 🚀 **Optimized Search & Filtering**: Redis caching accelerates project discovery, improving search speed by 40%.
-- 💬 **Post-Payment Chat**: Real-time messaging between clients and freelancers post-transaction for smooth collaboration.
-- 💳 **Secure Payments**: Integrated with Razorpay to ensure fast and secure online transactions.
-- ☁️ **Cloud-Native Deployment**: Deployed on Azure Kubernetes Service (AKS) for high availability, auto-scaling, and container orchestration.
-- 🔄 **Automated CI/CD Pipeline**: Streamlined development workflow with automated testing, building, and deployment processes.
-- 📈 **Horizontal Scalability**: Redis Pub/Sub enables seamless scaling across multiple server instances without losing real-time functionality.
+- ⚡ **Real-Time Bidding**: Sub-200 ms latency updates using Socket.io with Redis Pub/Sub for scalable real-time communication across multiple server instances.  
+- 🚀 **Optimized Search & Filtering**: Redis caching accelerates project discovery, improving search speed by 40%.  
+- 💬 **Post-Payment Chat**: Real-time messaging between clients and freelancers post-transaction for smooth collaboration.  
+- 💳 **Secure Payments**: Integrated with Razorpay to ensure fast and secure online transactions.  
+- ☁️ **Cloud-Native Deployment**: Deployed on Azure Kubernetes Service (AKS) with auto-scaling, load balancing, and zero-downtime updates.  
+- 🔄 **GitOps with ArgoCD**: Ensures cluster state always matches Git repository using declarative sync and rollback support.  
+- 📊 **Monitoring & Observability**: Prometheus collects system metrics (CPU, memory, pods, nodes, disk usage), while Grafana provides real-time dashboards and alerting.  
+- 🔄 **Automated CI/CD Pipeline**: GitHub Actions handle automated testing, building, security scans, and seamless deployments to AKS.  
+- 📈 **Horizontal Scalability**: Redis Pub/Sub enables scaling across multiple server instances without losing real-time functionality.  
 
 ## 🛠️ Tech Stack
 
-| Layer             | Technology                  |
-|-------------------|-----------------------------|
-| Frontend         | React.js                    |
-| Backend          | Node.js, Express.js         |
-| Database         | MongoDB                     |
-| Realtime Comm.   | Socket.io, Redis Pub/Sub    |
-| Caching Layer    | Redis                       |
-| Payment Gateway  | Razorpay                    |
-| Deployment       | Azure Kubernetes Service    |
-| DevOps           | CI/CD Pipeline              |
-| Container        | Docker                      |
+| Layer             | Technology                           |
+|-------------------|--------------------------------------|
+| Frontend         | React.js                             |
+| Backend          | Node.js, Express.js                  |
+| Database         | MongoDB                              |
+| Realtime Comm.   | Socket.io, Redis Pub/Sub             |
+| Caching Layer    | Redis                                |
+| Payment Gateway  | Razorpay                             |
+| Deployment       | Azure Kubernetes Service (AKS)       |
+| DevOps           | Docker, GitHub Actions (CI/CD), ArgoCD (GitOps) |
+| Monitoring       | Prometheus, Grafana                  |
 
 ## 🧑‍💻 Getting Started
 
@@ -75,69 +77,103 @@ A full-stack freelance bidding platform enabling real-time auctions, fast projec
    NODE_ENV=development  
    ```  
 
-     
-
-   For the frontend `.env`, include necessary API URLs and keys as needed (e.g., `REACT_APP_API_URL=http://localhost:5000`).
+   For the frontend `.env`,
+   🔐 Sample Frontend .env  
+   ```
+    # Frontend URL for CORS  
+      FRONTEND_URL=your_url
+   ```  
 
    After setup, run the backend with `npm run dev` and the frontend with `npm start`.
 
 ## 🚀 Deployment & DevOps
 
 ### Docker Containerization  
-The application is containerized using Docker for consistent environments. Build images with:  
+The application is fully containerized using Docker to ensure consistency across different environments.  
+Each service has its own Dockerfile and is built into lightweight images for portability and reproducibility.  
+
+Build images with:  
 ```
 docker build -t freelance-backend ./backend
 docker build -t freelance-frontend ./frontend
 ```
 
-### AKS Deployment  
-The application is deployed on Azure Kubernetes Service (AKS) for:  
-- Auto-scaling based on CPU/memory usage  
-- Load balancing across multiple pods  
-- Zero-downtime deployments  
-- Health monitoring and automatic recovery  
 
-Deploy using Kubernetes manifests (available in the `k8s/` directory) with `kubectl apply -f k8s/`.
+### AKS Deployment  
+The system is deployed on **Azure Kubernetes Service (AKS)** for reliable, scalable, and secure orchestration. Key features include:  
+- **Auto-scaling** based on CPU/memory thresholds  
+- **Load balancing** across multiple pods for high availability  
+- **Zero-downtime deployments** with rolling updates  
+- **Self-healing** pods via liveness and readiness probes  
+
+All Kubernetes manifests are stored in the `k8s-manifests/` directory and can be applied with:  
+```
+kubectl apply -f k8s-manifests/
+```
+
+### GitOps with ArgoCD  
+We use **ArgoCD** to implement GitOps principles for managing Kubernetes workloads.  
+- Continuously watches the Git repository for manifest changes  
+- Automatically syncs updates to the AKS cluster  
+- Guarantees that the **cluster state always matches the Git source of truth**  
+- Provides a visual dashboard for tracking deployment health, rollbacks, and sync status  
+
+This ensures a **declarative, reliable, and auditable** deployment workflow.  
+
+### Monitoring & Observability  
+Cluster monitoring and observability are handled with a **Prometheus + Grafana stack**:  
+- **Prometheus** scrapes, stores, and queries metrics like CPU usage, memory consumption, disk I/O, pod health, and node performance.  
+- **Grafana** provides rich dashboards to visualize these metrics in real time.  
+- **Alerting rules** in Prometheus notify when thresholds are breached (e.g., high CPU/memory usage, failing pods, low disk space).  
+
+This setup enables **proactive monitoring, issue detection, and resource optimization**.  
 
 ### CI/CD Pipeline  
-Automated workflow includes:  
-- Code Quality Checks - ESLint, testing  
-- Security Scanning - Vulnerability assessment  
-- Automated Testing - Unit and integration tests  
-- Docker Image Building - Multi-stage builds for optimization  
-- AKS Deployment - Automatic deployment to staging/production  
+Our CI/CD workflow is automated using **GitHub Actions**, covering the full development lifecycle:  
+- **Code Quality**: ESLint, automated testing, and type checking  
+- **Security**: Dependency and container vulnerability scanning  
+- **Automated Testing**: Unit and integration test suites  
+- **Docker Image Building**: Multi-stage builds for lean and optimized images  
+- **AKS Deployment**: Automatic deployment to staging/production clusters  
 
-Pipelines are configured using GitHub Actions (see `.github/workflows/`).
+Pipelines are defined in `.github/workflows/`, ensuring consistency and repeatability in releases.  
+
+---
 
 ## 📦 Core Functionalities
 
 ### Freelancers can:  
-- Browse & filter projects  
+- Browse & filter projects with advanced search  
 - Bid in real time across multiple server instances  
-- Chat with clients after payment  
+- Securely chat with clients after payment  
 
 ### Clients can:  
-- Post projects  
-- Receive & manage bids live  
+- Post and manage projects  
+- Receive live bids and select freelancers instantly  
 - Connect with freelancers post-payment  
 
 ### System Features:  
-- Horizontal scaling with Redis Pub/Sub  
-- High availability on AKS cluster  
-- Automated deployment and monitoring  
+- **Redis Pub/Sub** for horizontal scaling of real-time features  
+- **AKS-powered high availability** for resilient infrastructure  
+- **ArgoCD GitOps** for declarative, reliable cluster management  
+- **Prometheus + Grafana** for system metrics, dashboards, and alerts  
+- **Automated CI/CD pipelines** for continuous delivery  
+
+---
 
 ## 🏗️ Architecture Overview  
 
 The platform follows a microservices-inspired architecture:  
 - **Frontend**: React.js for responsive UI with real-time updates via Socket.io.  
-- **Backend**: Node.js/Express.js handling API requests, integrated with MongoDB for data persistence.  
-- **Real-Time Layer**: Socket.io for bidirectional communication, backed by Redis Pub/Sub for scalability.  
-- **Caching**: Redis for fast search and session management.  
+- **Backend**: Node.js/Express.js for APIs, integrated with MongoDB for persistence.  
+- **Real-Time Layer**: Socket.io for bidirectional communication, scaled with Redis Pub/Sub.  
+- **Caching**: Redis for fast project search and session handling.  
 - **Payments**: Razorpay API for secure transactions.  
-- **Deployment**: Docker containers orchestrated on AKS with CI/CD for automation.  
+- **Deployment**: Dockerized services orchestrated on AKS.  
+- **GitOps**: ArgoCD ensures Git and cluster remain in sync.  
+- **Monitoring**: Prometheus + Grafana provide insights into pods, nodes, CPU/memory/disk usage, and system health.  
 
 For a detailed diagram, refer to the `docs/architecture.png` file (if available in the repository).
-
 ## 🤝 Contributing  
 
 We welcome contributions! Follow the steps below to get started:  
