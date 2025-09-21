@@ -1,5 +1,7 @@
 # Root .gitignore
 /node_modules
+/venv
+/__pycache__
 /.env
 /backend/node_modules
 /frontend/node_modules

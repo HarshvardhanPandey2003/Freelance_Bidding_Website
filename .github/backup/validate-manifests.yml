@@ -17,26 +17,26 @@ jobs:
       uses: actions/checkout@v4
 
     # # Test 1: YAML Syntax Validation
-    # - name: 🔍 YAML Lint Check
-    #   run: |
-    #     echo "Checking YAML syntax with yamllint..."
-    #     pip install yamllint
-    #     yamllint -d "{extends: default, rules: {document-start: disable}}" k8s-manifests
-    #     echo "✅ YAML lint passed!"
+    - name: 🔍 YAML Lint Check
+      run: |
+        echo "Checking YAML syntax with yamllint..."
+        pip install yamllint
+        yamllint -d "{extends: default, rules: {document-start: disable}}" k8s-manifests
+        echo "✅ YAML lint passed!"
 
     # Test 2: Kubernetes Schema Validation
-    # - name: 🛡️ Kubernetes Schema Validation
-    #   uses: azure/setup-kubectl@v3
+    - name: 🛡️ Kubernetes Schema Validation
+      uses: azure/setup-kubectl@v3
       
-    # - name: Validate K8s Manifests
-    #   run: |
-    #     echo "Validating Kubernetes manifests..."
-    #     kubectl apply --dry-run=client --validate=true -f k8s-manifests/deployments/ || exit 1
-    #     kubectl apply --dry-run=client --validate=true -f k8s-manifests/configmaps/ || exit 1
-    #     kubectl apply --dry-run=client --validate=true -f k8s-manifests/ingress/ || exit 1
-    #     kubectl apply --dry-run=client --validate=true -f k8s-manifests/secrets/ || exit 1
-    #     kubectl apply --dry-run=client --validate=true -f k8s-manifests/autoscaling/ || exit 1
-        # echo "✅ All manifests are valid!"
+    - name: Validate K8s Manifests
+      run: |
+        echo "Validating Kubernetes manifests..."
+        kubectl apply --dry-run=client --validate=true -f k8s-manifests/deployments/ || exit 1
+        kubectl apply --dry-run=client --validate=true -f k8s-manifests/configmaps/ || exit 1
+        kubectl apply --dry-run=client --validate=true -f k8s-manifests/ingress/ || exit 1
+        kubectl apply --dry-run=client --validate=true -f k8s-manifests/secrets/ || exit 1
+        kubectl apply --dry-run=client --validate=true -f k8s-manifests/autoscaling/ || exit 1
+        echo "✅ All manifests are valid!"
 
     # Test 3: Resource Requirements Check
     - name: 🔧 Resource Requirements Check

@@ -49,12 +49,8 @@ export const initializeSocket = (io) => {
     // Initialize chat socket handlers (existing functionality)
     chatSocketHandler(socket);
 
-    // ==================================
     // BID-RELATED SOCKET HANDLERS
-    // ==================================
-
     // Join project room with authorization
-    // **IMPROVED: Better room joining with confirmation**
     socket.on('joinProject', async (projectId) => {
       try {
         if (!projectId || !mongoose.Types.ObjectId.isValid(projectId)) {
@@ -110,7 +106,7 @@ export const initializeSocket = (io) => {
     // Handle disconnect - FIX MEMORY LEAK
     // So what this does is when you close the application
     // socket.currentProject still exists in server memory. Socket might still be "joined" to the room
-    // thats why we call this when the user disconnects
+    // that is why we call this when the user disconnects
     socket.on('disconnect', () => {
       
       if (socket.currentProject) {
