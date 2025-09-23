@@ -1,7 +1,8 @@
 # Root .gitignore
 /node_modules
 /terraform/.terraform
-/terraform/.terraform.tfvars
+/terraform/terraform.tfstate*
+/terraform/terraform.tfvars
 /venv
 /__pycache__
 /.env
