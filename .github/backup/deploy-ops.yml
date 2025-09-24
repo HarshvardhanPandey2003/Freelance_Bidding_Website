@@ -1,0 +1,295 @@
+name: GitOps Build and Deploy
+
+on:
+  push:
+    branches: [prod]
+  workflow_dispatch:
+
+env:
+  RESOURCE_GROUP: ${{ vars.RESOURCE_GROUP || 'hvp-aks' }}
+  CLUSTER_NAME: ${{ vars.CLUSTER_NAME || 'freelance-aks' }}
+  KEY_VAULT_NAME: ${{ vars.KEY_VAULT_NAME || 'freelance-app-kv-2025' }}
+
+jobs:
+  build-and-gitops-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ vars.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+
+    - name: Get AKS credentials
+      run: |
+        az aks get-credentials \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.CLUSTER_NAME }} \
+          --overwrite-existing
+
+    # BUILD PHASE
+    - name: Build and Push Backend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        push: true
+        tags: ${{ vars.DOCKERHUB_USERNAME }}/freelance-backend:${{ github.sha }}
+
+    - name: Build and Push Frontend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        push: true
+        tags: ${{ vars.DOCKERHUB_USERNAME }}/freelance-frontend:${{ github.sha }}
+
+    # GET AZURE IDENTITY
+    - name: Get Azure Identity Information
+      id: get-identity
+      run: |
+        echo "🔍 Retrieving Azure identity information..."
+        
+        NODE_RG=$(az aks show \
+          --resource-group ${{ env.RESOURCE_GROUP }} \
+          --name ${{ env.CLUSTER_NAME }} \
+          --query nodeResourceGroup -o tsv)
+        TENANT_ID=$(az account show --query tenantId -o tsv)
+        
+        SECRETS_PROVIDER_CLIENT_ID=$(az identity list \
+          --resource-group $NODE_RG \
+          --query "[?contains(name, 'azurekeyvaultsecretsprovider')].clientId" \
+          -o tsv)
+        
+        echo "tenant-id=$TENANT_ID" >> $GITHUB_OUTPUT
+        echo "client-id=$SECRETS_PROVIDER_CLIENT_ID" >> $GITHUB_OUTPUT
+        
+        echo "✅ Retrieved identity information:"
+        echo "  • Tenant ID: $TENANT_ID"
+        echo "  • Client ID: $SECRETS_PROVIDER_CLIENT_ID"
+
+    # UPDATE MANIFESTS FOR GITOPS
+    - name: Update Kubernetes Manifests
+      run: |
+        echo "🔄 Updating manifests for GitOps..."
+        
+        # Update image tags
+        sed -i "s|image: .*/freelance-backend:.*|image: ${{ vars.DOCKERHUB_USERNAME }}/freelance-backend:${{ github.sha }}|" k8s-manifests/deployments/backend.yaml
+        sed -i "s|image: .*/freelance-frontend:.*|image: ${{ vars.DOCKERHUB_USERNAME }}/freelance-frontend:${{ github.sha }}|" k8s-manifests/deployments/frontend.yaml
+        
+        # Update Azure Key Vault identity (using your original method)
+        sed -i "s/userAssignedIdentityID: .*/userAssignedIdentityID: \"${{ steps.get-identity.outputs.client-id }}\"/" k8s-manifests/secrets/secret-provider.yaml
+        sed -i "s/tenantId: .*/tenantId: \"${{ steps.get-identity.outputs.tenant-id }}\"/" k8s-manifests/secrets/secret-provider.yaml
+        
+        echo "✅ Updated manifests:"
+        echo "  • Backend image: ${{ vars.DOCKERHUB_USERNAME }}/freelance-backend:${{ github.sha }}"
+        echo "  • Frontend image: ${{ vars.DOCKERHUB_USERNAME }}/freelance-frontend:${{ github.sha }}"
+
+    # COMMIT TO TRIGGER ARGOCD
+    - name: Commit Manifest Changes
+      run: |
+        # This is used for getting the info of the user in git commiting the changes
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        git add k8s-manifests/
+        
+        if git diff --staged --quiet; then
+          echo "📝 No manifest changes to commit"
+        else
+          git commit -m "🚀 GitOps: Update images to ${{ github.sha }}" 
+          
+          # This SHA creates unique id which means different verisons for all the images 
+          git push
+          echo "✅ Manifests committed - ArgoCD will sync!"
+        fi
+
+    - name: Wait for ArgoCD Sync and Deployment
+      run: |
+        echo "⏳ Waiting for ArgoCD to sync with forced refresh..."
+        
+        # Give ArgoCD time to detect the new application
+        sleep 30
+        
+        # Check both ArgoCD status AND actual resources
+        for i in {1..15}; do  # Increased attempts
+          SYNC_STATUS=$(kubectl get application freelance-app -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || echo "Unknown")
+          HEALTH_STATUS=$(kubectl get application freelance-app -n argocd -o jsonpath='{.status.health.status}' 2>/dev/null || echo "Unknown")
+          
+          # Check if actual resources exist
+          REDIS_COUNT=$(kubectl get deployment redis --ignore-not-found -o name | wc -l)
+          BACKEND_COUNT=$(kubectl get deployment backend --ignore-not-found -o name | wc -l)
+          FRONTEND_COUNT=$(kubectl get deployment frontend --ignore-not-found -o name | wc -l)
+          TOTAL_RESOURCES=$((REDIS_COUNT + BACKEND_COUNT + FRONTEND_COUNT))
+          
+          echo "📊 Attempt $i/15: Sync: $SYNC_STATUS, Health: $HEALTH_STATUS, Resources: $TOTAL_RESOURCES/3"
+          
+          if [[ "$SYNC_STATUS" == "Synced" && "$HEALTH_STATUS" == "Healthy" && $TOTAL_RESOURCES -eq 3 ]]; then
+            echo "✅ ArgoCD sync completed and all resources exist!"
+            break
+          fi
+          
+          if [[ $TOTAL_RESOURCES -eq 0 && $i -gt 5 ]]; then
+            echo "🔄 No resources found, checking ArgoCD status..."
+            kubectl describe application freelance-app -n argocd | tail -10
+          fi
+          
+          sleep 20  # Slightly longer wait
+        done
+        
+        # Final verification
+        echo "🔍 Final deployment check..."
+        kubectl get deployments -o wide
+        
+        # Wait for deployments to be ready
+        kubectl wait --for=condition=available deployment/redis --timeout=120s
+        kubectl wait --for=condition=available deployment/backend --timeout=120s  
+        kubectl wait --for=condition=available deployment/frontend --timeout=120s
+        
+    # DYNAMIC LOADBALANCER IP UPDATE (Your original working method)
+    - name: Get LoadBalancer IP and Update ConfigMap
+      id: get-ip
+      run: |
+        echo "🌐 Getting LoadBalancer IP for dynamic configuration..."
+        
+        # Wait for LoadBalancer IP (exactly like your original)
+        FRONTEND_IP=""
+        for i in {1..12}; do  # 2 minutes
+          FRONTEND_IP=$(kubectl get ingress app-ingress \
+            -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+          
+          if [[ $FRONTEND_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "✅ External IP assigned: $FRONTEND_IP"
+            break
+          fi
+          
+          echo "⏳ Attempt $i/12: Waiting for external IP... (current: '$FRONTEND_IP')"
+          sleep 10
+        done
+        
+        if [[ ! $FRONTEND_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "❌ Failed to get external IP after 2 minutes"
+          echo "Ingress status:"
+          kubectl get ingress app-ingress -o wide
+          kubectl describe ingress app-ingress
+          exit 1
+        fi
+        
+        # Set outputs (same as your original)
+        API_URL="http://$FRONTEND_IP/api"
+        FRONTEND_URL="http://$FRONTEND_IP"
+        
+        echo "frontend-ip=$FRONTEND_IP" >> $GITHUB_OUTPUT
+        echo "api-url=$API_URL" >> $GITHUB_OUTPUT
+        echo "frontend-url=$FRONTEND_URL" >> $GITHUB_OUTPUT
+        
+        echo "  • Frontend IP: $FRONTEND_IP"
+        echo "  • API URL: $API_URL"
+        echo "  • Frontend URL: $FRONTEND_URL"
+        
+        # Update ConfigMap using your ORIGINAL working method
+        echo "🔄 Updating ConfigMap with LoadBalancer IP..."
+        
+        cat > /tmp/configmap-patch.yaml << EOF
+        data:
+          FRONTEND_URL: "$FRONTEND_URL"
+        EOF
+        
+        # Apply the patch using --patch-file (your working method)
+        kubectl patch configmap app-config --patch-file /tmp/configmap-patch.yaml
+        rm /tmp/configmap-patch.yaml
+        
+        echo "✅ ConfigMap updated with external IP configuration"
+
+    # RESTART DEPLOYMENTS (Your original method)
+    - name: Restart Deployments
+      run: |
+        echo "🔄 Restarting deployments to pick up new configuration..."
+        
+        # Restart deployments to pick up new ConfigMap values
+        kubectl rollout restart deployment/frontend
+        kubectl rollout restart deployment/backend
+        
+        echo "⏳ Waiting for rollouts to complete..."
+        kubectl rollout status deployment/frontend --timeout=100s
+        kubectl rollout status deployment/backend --timeout=100s
+        
+        echo "✅ Deployments restarted successfully"
+
+    # FINAL STATUS AND HEALTH CHECK (Your original methods)
+    - name: Verify Deployment Status
+      run: |
+        echo "📊 === Final Deployment Status ==="
+        echo ""
+        echo "🏗️  Deployments:"
+        kubectl get deployments -o wide
+        echo ""
+        echo "📦 Pods:"
+        kubectl get pods -o wide
+        echo ""
+        echo "🌐 Services:"
+        kubectl get services -o wide
+        echo ""
+        echo "🔗 Ingress:"
+        kubectl get ingress -o wide
+
+    - name: Quick Health Verification
+      run: |
+        echo "🏥 Quick health verification..."
+        FRONTEND_IP="${{ steps.get-ip.outputs.frontend-ip }}"
+        
+        # Reduced wait time
+        sleep 20
+        
+        # Parallel health checks
+        {
+          if timeout 15 curl -sS -f "http://$FRONTEND_IP/api/health" >/dev/null 2>&1; then
+            echo "✅ API endpoint healthy"
+          else
+            echo "⚠️ API endpoint check failed"
+          fi
+        } &
+        
+        {
+          if timeout 15 curl -sS -f "http://$FRONTEND_IP" >/dev/null 2>&1; then
+            echo "✅ Frontend healthy"
+          else
+            echo "⚠️ Frontend check failed"
+          fi
+        } &
+        
+        wait
+        echo "🎉 Health checks completed"
+
+    # FINAL OUTPUT (Your original format)
+    - name: Output Deployment Results
+      run: |
+        echo "🎉 === GITOPS DEPLOYMENT COMPLETED SUCCESSFULLY ==="
+        echo ""
+        echo "📱 Application URLs:"
+        echo "  • Frontend: ${{ steps.get-ip.outputs.frontend-url }}"
+        echo "  • Backend API: ${{ steps.get-ip.outputs.api-url }}"
+        echo ""
+        echo "🔧 Infrastructure Details:"
+        echo "  • Resource Group: ${{ env.RESOURCE_GROUP }}"
+        echo "  • AKS Cluster: ${{ env.CLUSTER_NAME }}"
+        echo "  • Key Vault: ${{ env.KEY_VAULT_NAME }}"
+        echo "  • LoadBalancer IP: ${{ steps.get-ip.outputs.frontend-ip }}"
+        echo ""
+        echo "🎯 GitOps Status: Static manifests managed by ArgoCD"
+        echo "🔄 Dynamic Config: LoadBalancer IP updated via CI/CD"
+        echo ""
+        echo "::notice title=🚀 GitOps Deploy Success::Application is live at ${{ steps.get-ip.outputs.frontend-url }}"
+        echo "::notice title=🔗 API Endpoint::Backend API available at ${{ steps.get-ip.outputs.api-url }}"

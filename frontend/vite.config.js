@@ -9,7 +9,7 @@ export default defineConfig({
   },
   // Add this for local development
   server: {
-    port: 3000,
+    port: 5173,
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
