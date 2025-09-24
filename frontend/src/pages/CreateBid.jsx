@@ -3,13 +3,17 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
-import {socket}  from '../services/socket';
+import { useSocket } from '../hooks/SocketContext'; // Use the context hook
 
 export const CreateBid = () => {
   const params = useParams();
   const projectId = params.projectId || params.id;
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  // Use the socket from context
+  const { socket, isConnected } = useSocket();
+  
   const [formData, setFormData] = useState({
     bidAmount: '',
     message: '',
@@ -18,17 +22,21 @@ export const CreateBid = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // Listen for new bid events
-    socket.on('newBid', (newBid) => {
-      // Handle the new bid event if needed
-      console.log('New bid received:', newBid);
-    });
+    // Only set up listeners if socket exists and is connected
+    if (socket && isConnected) {
+      const handleNewBid = (newBid) => {
+        console.log('New bid received:', newBid);
+      };
 
-    // Clean up event listeners on component unmount
-    return () => {
-      socket.off('newBid');
-    };
-  }, []);
+      // Listen for new bid events
+      socket.on('newBid', handleNewBid);
+
+      // Clean up event listeners on component unmount
+      return () => {
+        socket.off('newBid', handleNewBid);
+      };
+    }
+  }, [socket, isConnected]); // Depend on socket and connection state
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,13 +50,15 @@ export const CreateBid = () => {
         message: formData.message
       });
 
-      // Emit the new bid event to the server
-      socket.emit('newBid', {
-        projectId,
-        bidAmount: parseFloat(formData.bidAmount),
-        message: formData.message,
-        freelancer: user._id
-      });
+      // Only emit if socket is connected
+      if (socket && isConnected) {
+        socket.emit('newBid', {
+          projectId,
+          bidAmount: parseFloat(formData.bidAmount),
+          message: formData.message,
+          freelancer: user._id
+        });
+      }
 
       navigate(`/freelance-project/${projectId}`);
     } catch (err) {

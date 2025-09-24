@@ -10,42 +10,60 @@ export const FreelancerDashboard = () => {
   const [filters, setFilters] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [lastRefresh, setLastRefresh] = useState(Date.now());
+  
+  // Keep a backup of current data
+  const [cachedProjects, setCachedProjects] = useState([]);
 
-  // Memoize fetchProjects to prevent unnecessary recreations
-  const fetchProjects = useCallback(async (filterParams = {}) => {
-    setLoading(true);
+  const fetchProjects = useCallback(async (filterParams = {}, isBackgroundUpdate = false) => {
+    // Only show loading for initial load
+    if (!isBackgroundUpdate && projects.length === 0) {
+      setLoading(true);
+    }
+
     try {
       const query = new URLSearchParams(filterParams).toString();
       const response = await api.get(`/api/projects/open?${query}`);
-      setProjects(response.data);
+      
+      // Optimistic update: only update if data actually changed
+      const newProjects = response.data;
+      if (JSON.stringify(newProjects) !== JSON.stringify(projects)) {
+        setProjects(newProjects);
+        setCachedProjects(newProjects); // Update cache
+      }
+      
       setError(null);
     } catch (err) {
       setError(err);
-      setProjects([]);
+      
+      // CRITICAL: Don't clear projects on background update failure
+      if (!isBackgroundUpdate) {
+        setProjects([]);
+      }
+      // For background updates, keep showing cached data
     } finally {
-      setLoading(false);
+      if (!isBackgroundUpdate && projects.length === 0) {
+        setLoading(false);
+      }
     }
-  }, []);
+  }, [projects]);
 
-  // Function to force a refresh
+  // Optimized refresh that avoids unnecessary updates
   const refreshProjects = useCallback(() => {
-    setLastRefresh(Date.now());
-  }, []);
+    fetchProjects(filters, true); // Background update
+  }, [filters, fetchProjects]);
 
-  // Update projects when filters or lastRefresh changes
+  // Initial load
   useEffect(() => {
-    fetchProjects(filters);
-  }, [filters, lastRefresh, fetchProjects]);
+    fetchProjects(filters, false);
+  }, [filters]); // Removed fetchProjects dependency to prevent loops
 
-  // Optional: Set up polling to refresh projects periodically
+  // Background polling
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      refreshProjects();
-    }, 3000); // Refresh every 30 seconds
-
-    return () => clearInterval(intervalId);
-  }, [refreshProjects]);
+    if (projects.length > 0) { // Only start polling after initial load
+      const intervalId = setInterval(refreshProjects, 30000);
+      return () => clearInterval(intervalId);
+    }
+  }, [refreshProjects, projects.length]);
 
   const handleApplyFilters = (appliedFilters) => {
     const activeFilters = {};
