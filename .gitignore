@@ -5,6 +5,8 @@
 /terraform/terraform.tfvars
 /venv
 /__pycache__
+/__pycache__/
+*.pyc
 /.env
 /backend/node_modules
 /frontend/node_modules

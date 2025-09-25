@@ -36,7 +36,7 @@ class FreelanceHubUser(FastHttpUser):
             if response.status_code == 200:
                 try:
                     data = response.json()
-                    print(f"📋 Full login response: {data}")
+                    print(f"Full login response: {data}")
                     
                     # Your API returns user data directly, not a token
                     # Let's work with what we have
@@ -46,15 +46,15 @@ class FreelanceHubUser(FastHttpUser):
                         self.token = f"fake-token-{self.user_id}"
                         self.headers = {"Authorization": f"Bearer {self.token}"}
                         self.authenticated = True
-                        print(f"✅ Using user ID as auth: {self.user_id}")
+                        print(f"Using user ID as auth: {self.user_id}")
                     
                 except json.JSONDecodeError:
-                    print(f"❌ Invalid JSON response")
+                    print(f"Invalid JSON response")
             else:
-                print(f"❌ Login failed: {response.status_code}")
+                print(f"Login failed: {response.status_code}")
                     
         except Exception as e:
-            print(f"❌ Login exception: {e}")
+            print(f"Login exception: {e}")
 
     @task(8)
     def browse_open_projects(self):
@@ -67,10 +67,10 @@ class FreelanceHubUser(FastHttpUser):
                 timeout=15,
                 name="GET /api/projects/open"
             )
-            print(f"📊 Projects response: {response.status_code}")
+            print(f"Projects response: {response.status_code}")
             
         except Exception as e:
-            print(f"❌ Projects exception: {e}")
+            print(f"Projects exception: {e}")
 
     @task(6)
     def get_profile(self):
@@ -92,28 +92,28 @@ class FreelanceHubUser(FastHttpUser):
                         timeout=10,
                         name="GET profile"
                     )
-                    print(f"📊 Profile response: {response.status_code}")
+                    print(f"Profile response: {response.status_code}")
                     if response.status_code in [200, 404]:
                         break  # Found working URL or acceptable 404
                     
             except Exception as e:
-                print(f"❌ Profile exception: {e}")
+                print(f"Profile exception: {e}")
 
     @task(5)
     def get_user_info(self):
         """Test user info endpoint"""
         try:
-            print(f"🔍 Attempting /api/auth/me")
+            print(f"Attempting /api/auth/me")
             response = self.client.get(
                 "/api/auth/me", 
                 headers=self.headers, 
                 timeout=10,
                 name="GET /api/auth/me"
             )
-            print(f"📊 Auth/me response: {response.status_code}")
+            print(f"Auth/me response: {response.status_code}")
             
         except Exception as e:
-            print(f"❌ Auth/me exception: {e}")
+            print(f"Auth/me exception: {e}")
 
     @task(10)  # High weight - this should always work
     def health_check(self):
@@ -125,12 +125,12 @@ class FreelanceHubUser(FastHttpUser):
                 name="GET /api/health"
             )
             if response.status_code == 200:
-                print(f"✅ Health check OK")
+                print(f"Health check OK")
             else:
-                print(f"❌ Health check failed: {response.status_code}")
+                print(f"Health check failed: {response.status_code}")
                 
         except Exception as e:
-            print(f"❌ Health check exception: {e}")
+            print(f"Health check exception: {e}")
 
     @task(3)
     def test_without_auth(self):
@@ -145,7 +145,7 @@ class FreelanceHubUser(FastHttpUser):
             print(f"📊 No-auth projects: {response.status_code}")
             
         except Exception as e:
-            print(f"❌ No-auth test exception: {e}")
+            print(f"No-auth test exception: {e}")
 
 # from locust import HttpUser, task, between
 
