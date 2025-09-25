@@ -1,5 +1,3 @@
-# main.tf
-
 terraform {
   required_providers {
     azurerm = {
@@ -16,26 +14,25 @@ provider "azurerm" {
 # Get current Azure context for tenant_id
 data "azurerm_client_config" "current" {}
 
-# Resource Group
-resource "azurerm_resource_group" "aks" {
-  name     = var.resource_group_name
-  location = var.location
+# Use existing Resource Group (instead of creating new one)
+data "azurerm_resource_group" "existing" {
+  name = var.resource_group_name
 }
 
 # Log Analytics Workspace
 resource "azurerm_log_analytics_workspace" "aks" {
   name                = "${var.cluster_name}-logs"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.aks.name
+  location            = data.azurerm_resource_group.existing.location  # Use existing RG location
+  resource_group_name = data.azurerm_resource_group.existing.name      # Use existing RG name
   sku                 = "PerGB2018"
   retention_in_days   = 30
 }
 
-# AKS Cluster - Fixed for v4.0
+# AKS Cluster - Using existing resource group
 resource "azurerm_kubernetes_cluster" "main" {
   name                = var.cluster_name
-  location            = azurerm_resource_group.aks.location
-  resource_group_name = azurerm_resource_group.aks.name
+  location            = data.azurerm_resource_group.existing.location  # Use existing RG location
+  resource_group_name = data.azurerm_resource_group.existing.name      # Use existing RG name
   dns_prefix          = var.dns_prefix
   kubernetes_version  = var.kubernetes_version
   node_resource_group = var.node_resource_group
@@ -70,15 +67,9 @@ resource "azurerm_kubernetes_cluster" "main" {
     dns_service_ip     = "10.0.0.10"
   }
 
-  # RBAC Configuration
+  # RBAC Configuration - Enable local accounts
   role_based_access_control_enabled = true
-  local_account_disabled            = false
-
-  # Azure AD Integration - FIXED: Added required tenant_id
-  azure_active_directory_role_based_access_control {
-    tenant_id          = data.azurerm_client_config.current.tenant_id
-    azure_rbac_enabled = false
-  }
+  local_account_disabled            = false  # This enables local accounts
 
   # Support plan
   support_plan = "KubernetesOfficial"
