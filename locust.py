@@ -31,7 +31,7 @@ class FreelanceHubUser(FastHttpUser):
                 name="POST /api/auth/login"
             )
             
-            print(f"🔍 Login Status: {response.status_code}")
+            print(f"Login Status: {response.status_code}")
             
             if response.status_code == 200:
                 try:
@@ -60,7 +60,7 @@ class FreelanceHubUser(FastHttpUser):
     def browse_open_projects(self):
         """Test projects endpoint (might work without real auth)"""
         try:
-            print(f"🔍 Attempting /api/projects/open")
+            print(f"Attempting /api/projects/open")
             response = self.client.get(
                 "/api/projects/open", 
                 headers=self.headers, 
@@ -85,7 +85,7 @@ class FreelanceHubUser(FastHttpUser):
                 ]
                 
                 for url in urls_to_try:
-                    print(f"🔍 Trying profile URL: {url}")
+                    print(f"Trying profile URL: {url}")
                     response = self.client.get(
                         url,
                         headers=self.headers, 
@@ -142,7 +142,7 @@ class FreelanceHubUser(FastHttpUser):
                 timeout=10,
                 name="GET projects (no auth)"
             )
-            print(f"📊 No-auth projects: {response.status_code}")
+            print(f"No-auth projects: {response.status_code}")
             
         except Exception as e:
             print(f"No-auth test exception: {e}")
