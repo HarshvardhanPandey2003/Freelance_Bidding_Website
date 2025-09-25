@@ -3,7 +3,7 @@
 # Prometheus and Grafana Installation Script for AKS
 echo "Installing Prometheus and Grafana with external IPs..."
 
-# Connect to cluster
+# Connect to cluster (skip addon disable if already done)
 az aks get-credentials --resource-group hvp-aks --name freelance-aks --overwrite-existing
 
 # Add Helm repos and create namespace
