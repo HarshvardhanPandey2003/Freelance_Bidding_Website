@@ -3,6 +3,7 @@
 /terraform/.terraform
 /terraform/terraform.tfstate*
 /terraform/terraform.tfvars
+/terraform/.terraform.lock.hcl*
 /venv
 /__pycache__
 /__pycache__/

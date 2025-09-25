@@ -118,6 +118,12 @@ jobs:
         
         echo "✅ Application manifests deployed"
 
+    - name: Deploy Autoscaling  
+      run: |
+        echo "📈 Deploying Horizontal Pod Autoscalers..."
+        kubectl apply -f k8s-manifests/autoscaling/hpa-combined.yaml
+        echo "✅ HPA manifests deployed"
+
     - name: Wait for Deployments
       run: |
         echo "⏳ Waiting for deployments to be ready (1 minute timeout)..."
