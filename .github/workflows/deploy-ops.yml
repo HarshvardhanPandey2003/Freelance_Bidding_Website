@@ -273,7 +273,6 @@ jobs:
         wait
         echo "🎉 Health checks completed"
 
-    # FINAL OUTPUT (Your original format)
     - name: Output Deployment Results
       run: |
         echo "🎉 === GITOPS DEPLOYMENT COMPLETED SUCCESSFULLY ==="
