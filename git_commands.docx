@@ -62,3 +62,5 @@ git fetch origin
 git status  # Should show no differences
 
 
+# Locust testing 
+locust -f locust.py --host=http://localhost:5000 -u 50 -r 5 -t 3m
