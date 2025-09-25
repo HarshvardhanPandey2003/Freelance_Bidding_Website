@@ -210,21 +210,21 @@ jobs:
         kubectl patch configmap app-config --patch-file /tmp/configmap-patch.yaml
         rm /tmp/configmap-patch.yaml
         
-        echo "✅ ConfigMap updated with external IP configuration"
+        echo "ConfigMap updated with external IP configuration"
 
     - name: Restart Deployments
       run: |
-        echo "🔄 Restarting deployments to pick up new configuration..."
+        echo " Restarting deployments to pick up new configuration..."
         
         # Restart deployments to pick up new ConfigMap values
         kubectl rollout restart deployment/frontend
         kubectl rollout restart deployment/backend
         
-        echo "⏳ Waiting for rollouts to complete..."
+        echo " Waiting for rollouts to complete..."
         kubectl rollout status deployment/frontend --timeout=180s
         kubectl rollout status deployment/backend --timeout=180s
         
-        echo "✅ Deployments restarted successfully"
+        echo "Deployments restarted successfully"
 
     - name: Verify Deployment Status
       run: |
