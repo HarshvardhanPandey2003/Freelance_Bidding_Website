@@ -22,17 +22,58 @@ data "azurerm_resource_group" "existing" {
 # Log Analytics Workspace
 resource "azurerm_log_analytics_workspace" "aks" {
   name                = "${var.cluster_name}-logs"
-  location            = data.azurerm_resource_group.existing.location  # Use existing RG location
-  resource_group_name = data.azurerm_resource_group.existing.name      # Use existing RG name
+  location            = data.azurerm_resource_group.existing.location
+  resource_group_name = data.azurerm_resource_group.existing.name
   sku                 = "PerGB2018"
   retention_in_days   = 30
 }
 
-# AKS Cluster - Using existing resource group
+# Azure Monitor Workspace for Managed Prometheus
+resource "azurerm_monitor_workspace" "prometheus" {
+  name                = "${var.cluster_name}-prometheus"
+  location            = data.azurerm_resource_group.existing.location
+  resource_group_name = data.azurerm_resource_group.existing.name
+  
+  tags = {}
+}
+
+# Azure Managed Grafana
+resource "azurerm_dashboard_grafana" "grafana" {
+  name                              = "${var.cluster_name}-grafana"
+  location                          = data.azurerm_resource_group.existing.location
+  resource_group_name               = data.azurerm_resource_group.existing.name
+  grafana_major_version             = "11"
+  
+  identity {
+    type = "SystemAssigned"
+  }
+  
+  azure_monitor_workspace_integrations {
+    resource_id = azurerm_monitor_workspace.prometheus.id
+  }
+  
+  tags = {}
+}
+
+# Role assignment to allow Grafana to read monitoring data
+resource "azurerm_role_assignment" "grafana_monitoring_reader" {
+  scope                = data.azurerm_resource_group.existing.id
+  role_definition_name = "Monitoring Reader"
+  principal_id         = azurerm_dashboard_grafana.grafana.identity[0].principal_id
+}
+
+# Role assignment to allow Grafana to read AKS cluster data
+resource "azurerm_role_assignment" "grafana_cluster_monitoring_reader" {
+  scope                = azurerm_kubernetes_cluster.main.id
+  role_definition_name = "Monitoring Reader"
+  principal_id         = azurerm_dashboard_grafana.grafana.identity[0].principal_id
+}
+
+# AKS Cluster - Using existing resource group with Managed Prometheus integration
 resource "azurerm_kubernetes_cluster" "main" {
   name                = var.cluster_name
-  location            = data.azurerm_resource_group.existing.location  # Use existing RG location
-  resource_group_name = data.azurerm_resource_group.existing.name      # Use existing RG name
+  location            = data.azurerm_resource_group.existing.location
+  resource_group_name = data.azurerm_resource_group.existing.name
   dns_prefix          = var.dns_prefix
   kubernetes_version  = var.kubernetes_version
   node_resource_group = var.node_resource_group
@@ -69,7 +110,7 @@ resource "azurerm_kubernetes_cluster" "main" {
 
   # RBAC Configuration - Enable local accounts
   role_based_access_control_enabled = true
-  local_account_disabled            = false  # This enables local accounts
+  local_account_disabled            = false
 
   # Support plan
   support_plan = "KubernetesOfficial"
@@ -78,6 +119,12 @@ resource "azurerm_kubernetes_cluster" "main" {
   oms_agent {
     log_analytics_workspace_id      = azurerm_log_analytics_workspace.aks.id
     msi_auth_for_monitoring_enabled = true
+  }
+
+  # Azure Monitor Metrics (Managed Prometheus) - NEW
+  monitor_metrics {
+    annotations_allowed = null
+    labels_allowed     = null
   }
 
   # OIDC Issuer
@@ -100,4 +147,16 @@ resource "azurerm_kubernetes_cluster" "main" {
   image_cleaner_interval_hours = 168
 
   tags = {}
+
+  # Ensure Grafana is created before AKS to avoid dependency issues
+  depends_on = [
+    azurerm_monitor_workspace.prometheus
+  ]
+}
+
+# Data collection rule association for Prometheus metrics
+resource "azurerm_monitor_data_collection_rule_association" "prometheus" {
+  name                    = "${var.cluster_name}-prometheus-dcra"
+  target_resource_id      = azurerm_kubernetes_cluster.main.id
+  data_collection_rule_id = azurerm_monitor_workspace.prometheus.default_data_collection_rule_id
 }

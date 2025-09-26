@@ -1,67 +1,53 @@
 #!/bin/bash
 
-# Prometheus and Grafana Installation Script for AKS
-echo "Installing Prometheus and Grafana with external IPs..."
+echo "Installing NGINX Ingress Controller and ArgoCD..."
 
-# Connect to cluster
+# Connect to AKS cluster (--overwrite-existing is correct)
 az aks get-credentials --resource-group hvp-aks --name freelance-aks --overwrite-existing
 
-# Add Helm repos and create namespace
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+# Install NGINX Ingress Controller
+echo "Installing NGINX Ingress Controller..."
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo update
-kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 
-# Uninstall existing release if it exists
-echo "Cleaning up existing installation..."
-helm uninstall prometheus -n monitoring 2>/dev/null || echo "No existing release found"
+# Create namespace
+kubectl create namespace ingress-nginx --dry-run=client -o yaml | kubectl apply -f -
 
-# Wait for cleanup
-sleep 10
+# Install NGINX Ingress Controller with correct syntax
+helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --set controller.service.type=LoadBalancer \
+  --set controller.service.externalTrafficPolicy=Local \
+  --set controller.replicaCount=2
 
-# Install with LoadBalancer services using upgrade (handles existing releases)
-echo "Installing Prometheus stack with LoadBalancer services..."
-helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
-  --namespace monitoring \
-  --set grafana.service.type=LoadBalancer \
-  --set prometheus.service.type=LoadBalancer \
-  --set alertmanager.service.type=LoadBalancer \
-  --set grafana.adminPassword=admin123
+# Install ArgoCD
+echo "Installing ArgoCD..."
+kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
-# Wait for pods to be ready
-echo "Waiting for pods to be ready..."
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana -n monitoring --timeout=300s
+# Wait for deployments to be ready (fixed timeout syntax)
+echo "Waiting for deployments to be ready..."
+kubectl wait --for=condition=available deployment/ingress-nginx-controller -n ingress-nginx --timeout=300s
+kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s
 
-# Wait for LoadBalancer external IPs (can take 2-5 minutes)
-echo "Waiting for external IPs to be assigned..."
-echo "This may take 2-5 minutes..."
+# Patch ArgoCD server service to LoadBalancer
+kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
 
-for i in {1..30}; do
-  GRAFANA_IP=$(kubectl get svc prometheus-grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
-  if [[ -n "$GRAFANA_IP" ]]; then
-    break
-  fi
-  echo "Still waiting for external IPs... ($i/30)"
-  sleep 10
-done
+# Get access information
+echo "Getting access information..."
+sleep 30
 
-# Display access information
+NGINX_IP=$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "Pending")
+ARGOCD_IP=$(kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "Pending")
+ARGOCD_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" 2>/dev/null | base64 -d || echo "Not available")
+
 echo ""
 echo "Access Information:"
-echo "==================="
-
-GRAFANA_IP=$(kubectl get svc prometheus-grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-PROM_IP=$(kubectl get svc prometheus-kube-prometheus-prometheus -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-ALERT_IP=$(kubectl get svc prometheus-kube-prometheus-alertmanager -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-
-echo "Grafana: http://$GRAFANA_IP (admin/admin123)"
-echo "Prometheus: http://$PROM_IP:9090"
-echo "AlertManager: http://$ALERT_IP:9093"
-
-if [[ -z "$GRAFANA_IP" ]]; then
-  echo ""
-  echo "External IPs still pending. Run this command to check status:"
-  echo "kubectl get svc -n monitoring"
-fi
-
+echo "====================="
+echo "NGINX Ingress Controller: $NGINX_IP"
+echo "ArgoCD URL: https://$ARGOCD_IP"
+echo "ArgoCD Username: admin"
+echo "ArgoCD Password: $ARGOCD_PASSWORD"
 echo ""
 echo "✅ Installation completed!"
+echo "📝 Save the ArgoCD password above for future logins"
