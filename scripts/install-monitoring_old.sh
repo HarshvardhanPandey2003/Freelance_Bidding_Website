@@ -1,66 +1,71 @@
 #!/bin/bash
 
-# Prometheus and Grafana Installation Script for AKS
-echo "Installing Prometheus and Grafana with external IPs..."
+echo "Fast Prometheus and Grafana installation..."
 
-# Connect to cluster (skip addon disable if already done)
+# Connect to cluster
 az aks get-credentials --resource-group hvp-aks --name freelance-aks --overwrite-existing
 
-# Add Helm repos and create namespace
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+# Add repos (if not exists)
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null 2>&1
+helm repo update >/dev/null 2>&1
+kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f - >/dev/null 2>&1
 
-# Uninstall existing release if it exists
-echo "Cleaning up existing installation..."
-helm uninstall prometheus -n monitoring 2>/dev/null || echo "No existing release found"
+# Quick cleanup
+echo "Quick cleanup..."
+helm uninstall prometheus -n monitoring --timeout=60s >/dev/null 2>&1 || true
+kubectl delete pvc --all -n monitoring --timeout=30s >/dev/null 2>&1 || true
+sleep 5
 
-# Wait for cleanup
-sleep 10
-
-# Install with LoadBalancer services using upgrade (handles existing releases)
-echo "Installing Prometheus stack with LoadBalancer services..."
+# MINIMAL fast installation - no complex resource limits
+echo "Installing with MINIMAL configuration for speed..."
 helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
   --namespace monitoring \
+  --timeout=5m \
+  --wait \
   --set grafana.service.type=LoadBalancer \
   --set prometheus.service.type=LoadBalancer \
-  --set alertmanager.service.type=LoadBalancer \
-  --set grafana.adminPassword=admin123
+  --set grafana.adminPassword=admin123 \
+  --set prometheus.prometheusSpec.replicas=1 \
+  --set grafana.replicas=1 \
+  --set alertmanager.alertmanagerSpec.replicas=1 \
+  --set prometheus.prometheusSpec.retention=7d \
+  --set prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage=2Gi
 
-# Wait for pods to be ready
-echo "Waiting for pods to be ready..."
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=grafana -n monitoring --timeout=300s
+if [ $? -ne 0 ]; then
+    echo "❌ Helm install failed. Trying ultra-minimal version..."
+    
+    # Fallback to absolute minimal
+    helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
+      --namespace monitoring \
+      --timeout=3m \
+      --wait \
+      --set grafana.service.type=LoadBalancer \
+      --set prometheus.service.type=LoadBalancer \
+      --set grafana.adminPassword=admin123
+fi
 
-# Wait for LoadBalancer external IPs (can take 2-5 minutes)
-echo "Waiting for external IPs to be assigned..."
-echo "This may take 2-5 minutes..."
+# Quick status check
+echo "Checking installation status..."
+kubectl get pods -n monitoring --no-headers | grep -v Running | grep -v Completed || echo "✅ All pods running!"
 
-for i in {1..30}; do
-  GRAFANA_IP=$(kubectl get svc prometheus-grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
-  if [[ -n "$GRAFANA_IP" ]]; then
-    break
-  fi
-  echo "Still waiting for external IPs... ($i/30)"
-  sleep 10
-done
-
-# Display access information
+# Get IPs immediately (don't wait if not ready)
 echo ""
-echo "Access Information:"
-echo "==================="
+echo "Service Status:"
+echo "=============="
+kubectl get svc -n monitoring
 
-GRAFANA_IP=$(kubectl get svc prometheus-grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-PROM_IP=$(kubectl get svc prometheus-kube-prometheus-prometheus -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-ALERT_IP=$(kubectl get svc prometheus-kube-prometheus-alertmanager -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+GRAFANA_IP=$(kubectl get svc prometheus-grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+PROM_IP=$(kubectl get svc prometheus-kube-prometheus-prometheus -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
 
-echo "Grafana: http://$GRAFANA_IP (admin/admin123)"
-echo "Prometheus: http://$PROM_IP:9090"
-echo "AlertManager: http://$ALERT_IP:9093"
-
-if [[ -z "$GRAFANA_IP" ]]; then
-  echo ""
-  echo "External IPs still pending. Run this command to check status:"
-  echo "kubectl get svc -n monitoring"
+if [[ -n "$GRAFANA_IP" ]]; then
+    echo ""
+    echo "🚀 Ready to access:"
+    echo "Grafana: http://$GRAFANA_IP (admin/admin123)"
+    echo "Prometheus: http://$PROM_IP:9090"
+else
+    echo ""
+    echo "⏳ External IPs still provisioning (2-5 minutes typical)"
+    echo "Check status: kubectl get svc -n monitoring"
 fi
 
 echo ""
