@@ -3,6 +3,20 @@
 
 A full-stack freelance bidding platform enabling real-time auctions, fast project search, and secure payments. Built using the MERN stack with Socket.io, Redis Pub/Sub, and Razorpay for real-time communication, accelerated search, and seamless payments. Deployed on Azure Kubernetes Service (AKS) with GitOps via ArgoCD, monitoring via Prometheus + Grafana, and automated CI/CD pipelines for scalability, reliability, and streamlined development workflow.
 
+## 🏗️ Architecture Overview  
+
+<img width="1020" height="628" alt="image" src="https://github.com/user-attachments/assets/6f96e005-5174-4e80-abde-49403d945eee" />
+
+The platform follows a Monolithic architecture:  
+- **Frontend**: React.js for responsive UI with real-time updates via Socket.io.  
+- **Backend**: Node.js/Express.js for APIs, integrated with MongoDB for persistence.  
+- **Real-Time Layer**: Socket.io for bidirectional communication, scaled with Redis Pub/Sub.  
+- **Caching**: Redis for fast project search and session handling.  
+- **Payments**: Razorpay API for secure transactions.  
+- **Deployment**: Dockerized services orchestrated on AKS.  
+- **GitOps**: ArgoCD ensures Git and cluster remain in sync.  
+- **Monitoring**: Prometheus + Grafana provide insights into pods, nodes, CPU/memory/disk usage, and system health.
+
 ## 🔧 Key Features
 
 - ⚡ **Real-Time Bidding**: Sub-200 ms latency updates using Socket.io with Redis Pub/Sub for scalable real-time communication across multiple server instances.  
@@ -28,22 +42,6 @@ A full-stack freelance bidding platform enabling real-time auctions, fast projec
 | Deployment       | Azure Kubernetes Service (AKS)       |
 | DevOps           | Docker, GitHub Actions (CI/CD), ArgoCD (GitOps) |
 | Monitoring       | Prometheus, Grafana                  |
-
-## 🏗️ Architecture Overview  
-
-<img width="1020" height="628" alt="image" src="https://github.com/user-attachments/assets/6f96e005-5174-4e80-abde-49403d945eee" />
-
-
-The platform follows a Monolithic architecture:  
-- **Frontend**: React.js for responsive UI with real-time updates via Socket.io.  
-- **Backend**: Node.js/Express.js for APIs, integrated with MongoDB for persistence.  
-- **Real-Time Layer**: Socket.io for bidirectional communication, scaled with Redis Pub/Sub.  
-- **Caching**: Redis for fast project search and session handling.  
-- **Payments**: Razorpay API for secure transactions.  
-- **Deployment**: Dockerized services orchestrated on AKS.  
-- **GitOps**: ArgoCD ensures Git and cluster remain in sync.  
-- **Monitoring**: Prometheus + Grafana provide insights into pods, nodes, CPU/memory/disk usage, and system health.
-
 
 ## 🧑‍💻 Getting Started
 
