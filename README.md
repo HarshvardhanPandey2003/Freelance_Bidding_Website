@@ -29,6 +29,22 @@ A full-stack freelance bidding platform enabling real-time auctions, fast projec
 | DevOps           | Docker, GitHub Actions (CI/CD), ArgoCD (GitOps) |
 | Monitoring       | Prometheus, Grafana                  |
 
+## 🏗️ Architecture Overview  
+
+<img width="1020" height="628" alt="image" src="https://github.com/user-attachments/assets/6f96e005-5174-4e80-abde-49403d945eee" />
+
+
+The platform follows a Monolithic architecture:  
+- **Frontend**: React.js for responsive UI with real-time updates via Socket.io.  
+- **Backend**: Node.js/Express.js for APIs, integrated with MongoDB for persistence.  
+- **Real-Time Layer**: Socket.io for bidirectional communication, scaled with Redis Pub/Sub.  
+- **Caching**: Redis for fast project search and session handling.  
+- **Payments**: Razorpay API for secure transactions.  
+- **Deployment**: Dockerized services orchestrated on AKS.  
+- **GitOps**: ArgoCD ensures Git and cluster remain in sync.  
+- **Monitoring**: Prometheus + Grafana provide insights into pods, nodes, CPU/memory/disk usage, and system health.
+
+
 ## 🧑‍💻 Getting Started
 
 1. **Clone the Repository**  
@@ -161,19 +177,6 @@ Pipelines are defined in `.github/workflows/`, ensuring consistency and repeatab
 
 ---
 
-## 🏗️ Architecture Overview  
-
-The platform follows a microservices-inspired architecture:  
-- **Frontend**: React.js for responsive UI with real-time updates via Socket.io.  
-- **Backend**: Node.js/Express.js for APIs, integrated with MongoDB for persistence.  
-- **Real-Time Layer**: Socket.io for bidirectional communication, scaled with Redis Pub/Sub.  
-- **Caching**: Redis for fast project search and session handling.  
-- **Payments**: Razorpay API for secure transactions.  
-- **Deployment**: Dockerized services orchestrated on AKS.  
-- **GitOps**: ArgoCD ensures Git and cluster remain in sync.  
-- **Monitoring**: Prometheus + Grafana provide insights into pods, nodes, CPU/memory/disk usage, and system health.  
-
-For a detailed diagram, refer to the `docs/architecture.png` file (if available in the repository).
 ## 🤝 Contributing  
 
 We welcome contributions! Follow the steps below to get started:  
