@@ -27,7 +27,25 @@ The platform follows a Monolithic architecture:
 - 🔄 **GitOps with ArgoCD**: Ensures cluster state always matches Git repository using declarative sync and rollback support.  
 - 📊 **Monitoring & Observability**: Prometheus collects system metrics (CPU, memory, pods, nodes, disk usage), while Grafana provides real-time dashboards and alerting.  
 - 🔄 **Automated CI/CD Pipeline**: GitHub Actions handle automated testing, building, security scans, and seamless deployments to AKS.  
-- 📈 **Horizontal Scalability**: Redis Pub/Sub enables scaling across multiple server instances without losing real-time functionality.  
+- 📈 **Horizontal Scalability**: Redis Pub/Sub enables scaling across multiple server instances without losing real-time functionality.
+
+---
+## 🐝 Load Testing with Locust  
+<img width="1000" height="650" alt="Screenshot 2025-09-24 181709" src="https://github.com/user-attachments/assets/b54f6cf3-5685-490d-88f5-45eb771fd2a9" />
+
+---
+## 📊 Grafana Dashboards  
+<img width="800" height="450" alt="Screenshot 2025-09-26 203729" src="https://github.com/user-attachments/assets/db188f1d-9885-4851-97c9-4c9f5c44846f" />
+<img width="800" height="450" alt="Screenshot 2025-09-26 203755" src="https://github.com/user-attachments/assets/24fd52da-8424-4c54-a948-6dcb0b0a2f8d" />
+<img width="800" height="450" alt="Screenshot 2025-09-26 203902" src="https://github.com/user-attachments/assets/9648f453-0dd2-4d46-ac61-5a6e528c9aa2" />
+
+---
+## ☸️ Kubernetes Lens Insights  
+<img width="800" height="450" alt="Screenshot 2025-09-26 204227" src="https://github.com/user-attachments/assets/87b7fa9b-b2b8-497a-99e2-f33813e37e1f" />
+<img width="800" height="450" alt="Screenshot 2025-09-26 203932" src="https://github.com/user-attachments/assets/f6fd5651-9f7e-45fa-962f-06ab8ee15952" />
+<img width="800" height="450" alt="Screenshot 2025-09-26 204035" src="https://github.com/user-attachments/assets/09f7b9a9-3987-4c88-8444-cce57e93c897" />
+
+--- 
 
 ## 🛠️ Tech Stack
 
@@ -150,24 +168,6 @@ Our CI/CD workflow is automated using **GitHub Actions**, covering the full deve
 - **Docker Image Building**: Multi-stage builds for lean and optimized images  
 - **AKS Deployment**: Automatic deployment to staging/production clusters  
 Pipelines are defined in `.github/workflows/`, ensuring consistency and repeatability in releases.  
----
-## 🐝 Load Testing with Locust  
-<img width="1000" height="650" alt="Screenshot 2025-09-24 181709" src="https://github.com/user-attachments/assets/b54f6cf3-5685-490d-88f5-45eb771fd2a9" />
-
----
-## 📊 Grafana Dashboards  
-<img width="800" height="450" alt="Screenshot 2025-09-26 203729" src="https://github.com/user-attachments/assets/db188f1d-9885-4851-97c9-4c9f5c44846f" />
-<img width="800" height="450" alt="Screenshot 2025-09-26 203755" src="https://github.com/user-attachments/assets/24fd52da-8424-4c54-a948-6dcb0b0a2f8d" />
-<img width="800" height="450" alt="Screenshot 2025-09-26 203902" src="https://github.com/user-attachments/assets/9648f453-0dd2-4d46-ac61-5a6e528c9aa2" />
-
----
-## ☸️ Kubernetes Lens Insights  
-<img width="800" height="450" alt="Screenshot 2025-09-26 204227" src="https://github.com/user-attachments/assets/87b7fa9b-b2b8-497a-99e2-f33813e37e1f" />
-<img width="800" height="450" alt="Screenshot 2025-09-26 203932" src="https://github.com/user-attachments/assets/f6fd5651-9f7e-45fa-962f-06ab8ee15952" />
-<img width="800" height="450" alt="Screenshot 2025-09-26 204035" src="https://github.com/user-attachments/assets/09f7b9a9-3987-4c88-8444-cce57e93c897" />
-
-
-
 ---
 ## 📦 Core Functionalities
 
