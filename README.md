@@ -149,11 +149,10 @@ Our CI/CD workflow is automated using **GitHub Actions**, covering the full deve
 - **Automated Testing**: Unit and integration test suites  
 - **Docker Image Building**: Multi-stage builds for lean and optimized images  
 - **AKS Deployment**: Automatic deployment to staging/production clusters  
-
 Pipelines are defined in `.github/workflows/`, ensuring consistency and repeatability in releases.  
 ---
 ## 🐝 Load Testing with Locust  
-<img width="800" height="450" alt="Screenshot 2025-09-24 181709" src="https://github.com/user-attachments/assets/b54f6cf3-5685-490d-88f5-45eb771fd2a9" />
+<img width="1000" height="650" alt="Screenshot 2025-09-24 181709" src="https://github.com/user-attachments/assets/b54f6cf3-5685-490d-88f5-45eb771fd2a9" />
 
 ---
 ## 📊 Grafana Dashboards  
