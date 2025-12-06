@@ -1,11 +1,12 @@
 
 # FreelanceHub Connect
 
-A full-stack freelance bidding platform enabling real-time auctions, fast project search, and secure payments. Built using the MERN stack with Socket.io, Redis Pub/Sub, and Razorpay for real-time communication, accelerated search, and seamless payments. Deployed on Azure Kubernetes Service (AKS) with GitOps via ArgoCD, monitoring via Prometheus + Grafana, and automated CI/CD pipelines for scalability, reliability, and streamlined development workflow.
+A full-stack freelance bidding platform enabling real-time auctions, fast project search, and secure payments. Built using the MERN stack with Socket.io, Redis Pub/Sub, and Razorpay for real-time communication, accelerated search, and seamless payments. Deployed on Azure Kubernetes Service (AKS) , monitoring via Prometheus + Grafana, and automated CI/CD pipelines for scalability, reliability, and streamlined development workflow.
 
 ## 🏗️ Architecture Overview  
 
-<img width="1020" height="628" alt="image" src="https://github.com/user-attachments/assets/6f96e005-5174-4e80-abde-49403d945eee" />
+<!-- <img width="1020" height="628" alt="image" src="https://github.com/user-attachments/assets/6f96e005-5174-4e80-abde-49403d945eee" /> -->
+<img width="1020" height="628" alt="image" src="https://github.com/user-attachments/assets/54641472-94ef-4539-9d28-006f89009a9a" />
 
 The platform follows a Monolithic architecture:  
 - **Frontend**: React.js for responsive UI with real-time updates via Socket.io.  
@@ -14,7 +15,6 @@ The platform follows a Monolithic architecture:
 - **Caching**: Redis for fast project search and session handling.  
 - **Payments**: Razorpay API for secure transactions.  
 - **Deployment**: Dockerized services orchestrated on AKS.  
-- **GitOps**: ArgoCD ensures Git and cluster remain in sync.  
 - **Monitoring**: Prometheus + Grafana provide insights into pods, nodes, CPU/memory/disk usage, and system health.
 
 ## 🔧 Key Features
@@ -24,7 +24,6 @@ The platform follows a Monolithic architecture:
 - 💬 **Post-Payment Chat**: Real-time messaging between clients and freelancers post-transaction for smooth collaboration.  
 - 💳 **Secure Payments**: Integrated with Razorpay to ensure fast and secure online transactions.  
 - ☁️ **Cloud-Native Deployment**: Deployed on Azure Kubernetes Service (AKS) with auto-scaling, load balancing, and zero-downtime updates.  
-- 🔄 **GitOps with ArgoCD**: Ensures cluster state always matches Git repository using declarative sync and rollback support.  
 - 📊 **Monitoring & Observability**: Prometheus collects system metrics (CPU, memory, pods, nodes, disk usage), while Grafana provides real-time dashboards and alerting.  
 - 🔄 **Automated CI/CD Pipeline**: GitHub Actions handle automated testing, building, security scans, and seamless deployments to AKS.  
 - 📈 **Horizontal Scalability**: Redis Pub/Sub enables scaling across multiple server instances without losing real-time functionality.
@@ -58,7 +57,7 @@ The platform follows a Monolithic architecture:
 | Caching Layer    | Redis                                |
 | Payment Gateway  | Razorpay                             |
 | Deployment       | Azure Kubernetes Service (AKS)       |
-| DevOps           | Docker, GitHub Actions (CI/CD), ArgoCD (GitOps) |
+| DevOps           | Docker, GitHub Actions (CI/CD)       |
 | Monitoring       | Prometheus, Grafana                  |
 
 ## 🧑‍💻 Getting Started
