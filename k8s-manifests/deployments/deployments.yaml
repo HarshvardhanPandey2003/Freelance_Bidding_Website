@@ -1,4 +1,4 @@
-# k8s-manifests/deployments/backend.yaml
+# Backend Deployment & Service
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,24 +16,16 @@ spec:
       labels:
         app: backend
     spec:
-      serviceAccountName: workload-identity-sa
-      volumes:
-      - name: secrets-store
-        csi:
-          driver: secrets-store.csi.k8s.io
-          readOnly: true  
-          volumeAttributes:
-            secretProviderClass: "app-secrets-provider"
       containers:
       - name: backend
         image: harshvardhan2003/freelance-backend:ee1eb10f1e630d4862c266c011e10a07ece26e91
         resources:
           requests:
-            cpu: "100m"      # Reduced from 500m
-            memory: "256Mi"   # Reduced from 512Mi
+            cpu: "100m"
+            memory: "256Mi"
           limits:
-            cpu: "500m"       # Reduced from 1000m
-            memory: "512Mi"   # Reduced from 1Gi
+            cpu: "500m"
+            memory: "512Mi"
         ports:
         - containerPort: 5000
         envFrom:
@@ -67,10 +59,6 @@ spec:
             secretKeyRef:
               name: backend-secrets-k8s
               key: RAZORPAY_KEY_SECRET
-        volumeMounts:
-        - name: secrets-store
-          mountPath: "/mnt/secrets-store"    # CHANGED: Standard path
-          readOnly: true
 ---
 apiVersion: v1
 kind: Service
@@ -83,4 +71,54 @@ spec:
     - protocol: TCP
       port: 5000
       targetPort: 5000
+  type: ClusterIP
+---
+# Frontend Deployment & Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: harshvardhan2003/freelance-frontend:ee1eb10f1e630d4862c266c011e10a07ece26e91
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "200m"
+            memory: "128Mi"
+        ports:
+        - containerPort: 80
+        env:
+        - name: VITE_RAZORPAY_KEY
+          valueFrom:
+            secretKeyRef:
+              name: frontend-secrets-k8s
+              key: VITE_RAZORPAY_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
   type: ClusterIP
