@@ -1,60 +1,63 @@
-# .github/workflows/deploy.yml
-name: Local Minikube Deployment
+name: Local DevOps Lifecycle
 
 on:
   push:
-    branches:  
-      - main
-      - prod 
-  workflow_dispatch:
+    branches: [ minikube ]
+  workflow_dispatch: # Allows you to trigger it manually for testing
 
 jobs:
-  deploy-local:
-    # This tells GitHub to run the job on your Windows machine
+  build-and-deploy:
     runs-on: self-hosted
-    
+    # Setting environment variables for the whole job
+    env:
+      NAMESPACE: freelance-hub
+      BACKEND_IMG: harshvardhan2003/freelance-backend:latest
+      FRONTEND_IMG: harshvardhan2003/freelance-frontend:latest
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
 
-    - name: Load Images into Minikube
-      # Loading the images directly into the cluster
-      run: |
-        echo "Loading frontend and backend images into Minikube..."
-        minikube image load harshvardhan2003/freelance-backend:latest
-        minikube image load harshvardhan2003/freelance-frontend:latest
-        minikube image load redis:7-alpine
+      - name: Build and Patch Images (Podman)
+        run: |
+          echo "Building fresh images locally..."
+          # Build images using Podman (assuming Dockerfiles are in ./backend and ./frontend)
+          podman build -t ${{ env.BACKEND_IMG }} ./backend
+          podman build -t ${{ env.FRONTEND_IMG }} ./frontend
 
-    - name: Deploy Local Secrets and Config
-      run: |
-        echo "Deploying local secrets and configurations..."
-        # Make sure local-secrets.yaml is committed to your repo!
-        kubectl apply -f k8s-manifests/secrets/local-secrets.yaml
-        kubectl apply -f k8s-manifests/configmaps/app-config.yaml
-        
-    - name: Deploy Applications and Ingress
-      run: |
-        echo "Deploying applications..."
-        kubectl apply -f k8s-manifests/deployments/redis.yaml
-        kubectl apply -f k8s-manifests/deployments/backend.yaml
-        kubectl apply -f k8s-manifests/deployments/frontend.yaml
-        kubectl apply -f k8s-manifests/ingress/ingress.yaml
-        kubectl apply -f k8s-manifests/autoscaling/hpa-combined.yaml
+      - name: Sideload Images to Minikube
+        run: |
+          echo "Injecting images into Minikube registry..."
+          minikube image load ${{ env.BACKEND_IMG }}
+          minikube image load ${{ env.FRONTEND_IMG }}
 
-    - name: Wait for Deployments
-      run: |
-        echo "Waiting for deployments to spin up..."
-        kubectl rollout status deployment/redis --timeout=60s
-        kubectl rollout status deployment/backend --timeout=90s
-        kubectl rollout status deployment/frontend --timeout=90s
-        
-        echo "All local deployments are running!"
+      - name: Validate Kubernetes Manifests
+        run: |
+          # Dry-run check to ensure YAML syntax is valid before applying
+          kubectl apply --dry-run=client -f k8s-manifests/configmaps/ -f k8s-manifests/deployments/
 
-    - name: Get Minikube Routing Details
-      run: |
-        echo "=== Local Deployment Summary ==="
-        # Getting the cluster IP is much simpler than Azure load balancers
-        $MINIKUBE_IP = minikube ip
-        echo "Your application should be accessible via your Minikube Ingress."
-        echo "Ensure you have added the following to your C:\Windows\System32\drivers\etc\hosts file:"
-        echo "$MINIKUBE_IP  freelance.local"
+      - name: Infrastructure Sync
+        run: |
+          echo "Applying ConfigMaps and Horizontal Pod Autoscalers..."
+          kubectl apply -f k8s-manifests/configmaps/app-config.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f k8s-manifests/autoscaling/hpa-combined.yaml -n ${{ env.NAMESPACE }}
+
+      - name: Zero-Downtime Deployment
+        run: |
+          echo "Deploying Application Components..."
+          kubectl apply -f k8s-manifests/deployments/redis.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f k8s-manifests/deployments/backend.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f k8s-manifests/deployments/frontend.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f k8s-manifests/ingress/ingress.yaml -n ${{ env.NAMESPACE }}
+
+      - name: Deployment Health Verification
+        run: |
+          echo "Verifying rollout status..."
+          kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=120s
+          kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=120s
+
+      - name: Post-Deploy Cleanup
+        if: always()
+        run: |
+          echo "Cleaning up dangling Podman images to save disk space..."
+          podman image prune -f
