@@ -20,10 +20,11 @@ jobs:
 
       - name: Build and Patch Images (Podman)
         run: |
-          echo "Building fresh images locally..."
-          # Build images using Podman (assuming Dockerfiles are in ./backend and ./frontend)
           podman build -t ${{ env.BACKEND_IMG }} ./backend
           podman build -t ${{ env.FRONTEND_IMG }} ./frontend
+          # Explicitly remove the localhost prefix if Podman added it
+          podman tag localhost/${{ env.BACKEND_IMG }} ${{ env.BACKEND_IMG }}
+          podman tag localhost/${{ env.FRONTEND_IMG }} ${{ env.FRONTEND_IMG }}
 
       - name: Sideload Images to Minikube
         run: |
@@ -32,9 +33,12 @@ jobs:
           minikube image load ${{ env.FRONTEND_IMG }}
 
       - name: Validate Kubernetes Manifests
+        shell: pwsh
         run: |
-          # Dry-run check to ensure YAML syntax is valid before applying
-          kubectl apply --dry-run=client -f k8s-manifests/configmaps/ -f k8s-manifests/deployments/
+          Write-Host "Dry-run check to ensure YAML syntax is valid..."
+          # Validating entire directories is cleaner
+          kubectl apply --dry-run=client -f k8s-manifests/configmaps/
+          kubectl apply --dry-run=client -f k8s-manifests/deployments/
 
       - name: Infrastructure Sync
         run: |
