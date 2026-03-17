@@ -1,0 +1,60 @@
+# .github/workflows/deploy.yml
+name: Local Minikube Deployment
+
+on:
+  push:
+    branches:  
+      - main
+      - prod 
+  workflow_dispatch:
+
+jobs:
+  deploy-local:
+    # This tells GitHub to run the job on your Windows machine
+    runs-on: self-hosted
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Load Images into Minikube
+      # Loading the images directly into the cluster
+      run: |
+        echo "Loading frontend and backend images into Minikube..."
+        minikube image load harshvardhan2003/freelance-backend:latest
+        minikube image load harshvardhan2003/freelance-frontend:latest
+        minikube image load redis:7-alpine
+
+    - name: Deploy Local Secrets and Config
+      run: |
+        echo "Deploying local secrets and configurations..."
+        # Make sure local-secrets.yaml is committed to your repo!
+        kubectl apply -f k8s-manifests/secrets/local-secrets.yaml
+        kubectl apply -f k8s-manifests/configmaps/app-config.yaml
+        
+    - name: Deploy Applications and Ingress
+      run: |
+        echo "Deploying applications..."
+        kubectl apply -f k8s-manifests/deployments/redis.yaml
+        kubectl apply -f k8s-manifests/deployments/backend.yaml
+        kubectl apply -f k8s-manifests/deployments/frontend.yaml
+        kubectl apply -f k8s-manifests/ingress/ingress.yaml
+        kubectl apply -f k8s-manifests/autoscaling/hpa-combined.yaml
+
+    - name: Wait for Deployments
+      run: |
+        echo "Waiting for deployments to spin up..."
+        kubectl rollout status deployment/redis --timeout=60s
+        kubectl rollout status deployment/backend --timeout=90s
+        kubectl rollout status deployment/frontend --timeout=90s
+        
+        echo "All local deployments are running!"
+
+    - name: Get Minikube Routing Details
+      run: |
+        echo "=== Local Deployment Summary ==="
+        # Getting the cluster IP is much simpler than Azure load balancers
+        $MINIKUBE_IP = minikube ip
+        echo "Your application should be accessible via your Minikube Ingress."
+        echo "Ensure you have added the following to your C:\Windows\System32\drivers\etc\hosts file:"
+        echo "$MINIKUBE_IP  freelance.local"
