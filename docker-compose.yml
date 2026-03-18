@@ -2,11 +2,11 @@ version: '3.8'
 
 services:
   frontend:
-    image: harshvardhan2003/freelance-frontend:latest
-    ports:
-      - "80:3000"
-    networks:
-      - app-network
+      image: harshvardhan2003/freelance-frontend:latest
+      ports:
+        - "8080:3000"  # Changed from "80:3000"
+      networks:
+        - app-network
 
   backend:
     image: harshvardhan2003/freelance-backend:latest
