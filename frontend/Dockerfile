@@ -1,5 +1,5 @@
 # Build stage - UPGRADED TO NODE 20
-FROM node:20-alpine AS builder
+FROM docker.io/library/node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files
@@ -15,7 +15,7 @@ COPY . .
 RUN npm run build
 
 # Production stage - Remains the same
-FROM nginx:alpine
+FROM docker.io/library/nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

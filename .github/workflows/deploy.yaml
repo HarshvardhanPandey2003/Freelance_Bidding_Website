@@ -1,14 +1,13 @@
-name: Local DevOps Lifecycle
+name: Local DevOps Lifecycle (WSL)
 
 on:
   push:
     branches: [ minikube ]
-  workflow_dispatch: # Allows you to trigger it manually for testing
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: self-hosted
-    # Setting environment variables for the whole job
     env:
       NAMESPACE: freelance-hub
       BACKEND_IMG: harshvardhan2003/freelance-backend:latest
@@ -18,13 +17,17 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      - name: Ensure Namespace Exists
+        run: |
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
       - name: Build and Patch Images (Podman)
         run: |
           podman build -t ${{ env.BACKEND_IMG }} ./backend
           podman build -t ${{ env.FRONTEND_IMG }} ./frontend
-          # Explicitly remove the localhost prefix if Podman added it
-          podman tag localhost/${{ env.BACKEND_IMG }} ${{ env.BACKEND_IMG }}
-          podman tag localhost/${{ env.FRONTEND_IMG }} ${{ env.FRONTEND_IMG }}
+          # The || true prevents the pipeline from crashing if the tag already exists
+          podman tag localhost/${{ env.BACKEND_IMG }} ${{ env.BACKEND_IMG }} || true
+          podman tag localhost/${{ env.FRONTEND_IMG }} ${{ env.FRONTEND_IMG }} || true
 
       - name: Sideload Images to Minikube
         run: |
@@ -33,16 +36,15 @@ jobs:
           minikube image load ${{ env.FRONTEND_IMG }}
 
       - name: Validate Kubernetes Manifests
-        shell: pwsh
         run: |
-          Write-Host "Dry-run check to ensure YAML syntax is valid..."
-          # Validating entire directories is cleaner
+          echo "Dry-run check to ensure YAML syntax is valid..."
           kubectl apply --dry-run=client -f k8s-manifests/configmaps/
           kubectl apply --dry-run=client -f k8s-manifests/deployments/
 
       - name: Infrastructure Sync
         run: |
-          echo "Applying ConfigMaps and Horizontal Pod Autoscalers..."
+          echo "Applying Secrets, ConfigMaps, and HPA..."
+          kubectl apply -f k8s-manifests/secrets/local-secrets.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f k8s-manifests/configmaps/app-config.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f k8s-manifests/autoscaling/hpa-combined.yaml -n ${{ env.NAMESPACE }}
 
@@ -53,6 +55,12 @@ jobs:
           kubectl apply -f k8s-manifests/deployments/backend.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f k8s-manifests/deployments/frontend.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f k8s-manifests/ingress/ingress.yaml -n ${{ env.NAMESPACE }}
+
+      - name: Force Image Refresh
+        run: |
+          echo "Restarting pods to pull fresh sideloaded images..."
+          kubectl rollout restart deployment/backend -n ${{ env.NAMESPACE }}
+          kubectl rollout restart deployment/frontend -n ${{ env.NAMESPACE }}
 
       - name: Deployment Health Verification
         run: |
