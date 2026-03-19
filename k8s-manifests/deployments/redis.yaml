@@ -19,6 +19,19 @@ spec:
         image: redis:7-alpine
         ports:
         - containerPort: 6379
+        resources:  # Added this block to satisfy Test 3
+          requests:
+            cpu: "100m"  # Requests 0.1 CPU core
+            memory: "128Mi"  # Requests 128 MB memory
+          limits:
+            cpu: "500m"  # Limits to 0.5 CPU core
+            memory: "512Mi"  # Limits to 512 MB memory
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+      volumes:
+      - name: redis-data
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

@@ -102,5 +102,8 @@ jobs:
       - name: Post-Deploy Cleanup
         if: always()
         run: |
-          echo "Cleaning up dangling Podman images to save disk space..."
-          podman image prune -f
+          echo "Cleaning up dead containers and dangling images to save disk space..."
+          # Clean up stopped temporary containers first
+          podman container prune -f || true
+          # Then clean up the dangling images
+          podman image prune -f || true
