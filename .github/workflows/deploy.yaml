@@ -41,6 +41,37 @@ jobs:
           kubectl apply --dry-run=client -f k8s-manifests/configmaps/
           kubectl apply --dry-run=client -f k8s-manifests/deployments/
 
+      - name: Generate Local Secrets File
+        run: |
+          echo "Generating local-secrets.yaml from GitHub Secrets..."          
+          # Ensure the directory exists
+          mkdir -p k8s-manifests/secrets
+          
+          # Dynamically create the YAML file using heredoc syntax
+          cat <<EOF > k8s-manifests/secrets/local-secrets.yaml
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: backend-secrets-k8s
+          type: Opaque
+          stringData:
+            MONGODB_URI: "${{ secrets.MONGODB_URI }}"
+            MONGODB_URL: "${{ secrets.MONGODB_URI }}"
+            JWT_SECRET: "${{ secrets.JWT_SECRET }}"
+            RAZORPAY_KEY_ID: "${{ secrets.RAZORPAY_KEY_ID }}"
+            RAZORPAY_KEY_SECRET: "${{ secrets.RAZORPAY_KEY_SECRET }}"
+          ---
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: frontend-secrets-k8s
+          type: Opaque
+          stringData:
+            VITE_RAZORPAY_KEY: "${{ secrets.RAZORPAY_KEY_ID }}"
+          EOF
+          
+          echo "Secrets file generated successfully!"
+
       - name: Infrastructure Sync
         run: |
           echo "Applying Secrets, ConfigMaps, and HPA..."
