@@ -107,3 +107,17 @@ jobs:
           podman container prune -f || true
           # Then clean up the dangling images
           podman image prune -f || true
+
+      - name: Output Application URLs
+        run: |
+          echo "DEPLOYMENT SUCCESSFUL!"
+          echo "========================================="
+          echo "Frontend is live at: http://freelance.local"
+          echo "Backend API is at:  http://freelance.local/api"
+          echo "========================================="
+          echo "Note: Ensure 'minikube tunnel' is running in a separate WSL terminal to access these links."
+          
+          # This writes a visual summary to the GitHub Actions UI
+          echo "### Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend:** [http://freelance.local](http://freelance.local)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend API:** [http://freelance.local/api](http://freelance.local/api)" >> $GITHUB_STEP_SUMMARY
