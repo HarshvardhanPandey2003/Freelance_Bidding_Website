@@ -5,7 +5,7 @@ metadata:
   name: app-config
 data:
   # Backend non-sensitive configs
-  REDIS_URI: "redis://redis-service.freelance-hub.svc.cluster.local:6379"
+  REDIS_URI: "redis://redis-service:6379"
   JWT_EXPIRES_IN: "1d"
   NODE_ENV: "production"
   
