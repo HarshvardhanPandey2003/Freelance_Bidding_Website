@@ -113,7 +113,7 @@ jobs:
           echo "DEPLOYMENT SUCCESSFUL!"
           echo "========================================="
           echo "Frontend is live at: http://freelance.local"
-          echo "Backend API is at:  http://freelance.local/api"
+          echo "Backend API is at:  http://freelance.local/api/auth"
           echo "========================================="
           echo "Note: Ensure 'minikube tunnel' is running in a separate WSL terminal to access these links."
           
