@@ -7,17 +7,22 @@ const SocketContext = createContext();
 
 export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
-  const [socket, setSocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
-  
-  // Use a ref to hold the instance. This prevents Strict Mode 
-  // from thrashing and dropping the WebSocket connection.
+
+  // socketRef holds the live socket instance.
+  // We intentionally do NOT put the socket in useState — doing so causes a
+  // null-flash race condition: when setSocket(null) fires during cleanup,
+  // React batches it and child components briefly see socket=null while
+  // the WebSocket is still alive. Any socket.on() call in that window crashes.
   const socketRef = useRef(null);
 
+  // socketReady is purely a render-trigger so components re-render
+  // when the socket is first created. We never set it back to false.
+  const [socketReady, setSocketReady] = useState(false);
+
   useEffect(() => {
-    // Only initialize if we have a user AND we haven't already created a socket
+    // Create socket only when user is present and no socket exists yet.
     if (user && !socketRef.current) {
-      // Explicitly target the window origin so it routes perfectly through your Ingress
       const targetUrl = window.location.origin;
       console.log(`Socket connecting to: ${targetUrl}`);
 
@@ -29,8 +34,7 @@ export const SocketProvider = ({ children }) => {
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,
         timeout: 20000,
-        // Strictly enforcing WebSocket only, zero polling fallback
-        transports: ['websocket'], 
+        transports: ['websocket'],
       });
 
       socketInstance.on('connect', () => {
@@ -41,6 +45,9 @@ export const SocketProvider = ({ children }) => {
       socketInstance.on('disconnect', (reason) => {
         console.log('Socket disconnected. Reason:', reason);
         setIsConnected(false);
+        // NOTE: We do NOT set socketRef.current = null here.
+        // Socket.io handles reconnection internally. If we null the ref,
+        // child useEffects would crash when they try socket.on() on reconnect.
       });
 
       socketInstance.on('connect_error', (err) => {
@@ -48,25 +55,29 @@ export const SocketProvider = ({ children }) => {
         setIsConnected(false);
       });
 
-      // Save to ref for stability, save to state for React reactivity
       socketRef.current = socketInstance;
-      setSocket(socketInstance);
+      // Trigger exactly one re-render so children pick up the new socket ref.
+      setSocketReady(true);
     }
 
-    // Cleanup function
     return () => {
-      // If the user logs out (user becomes null), we destroy the socket.
+      // Only truly destroy the socket when the user logs out (user → null).
+      // Do NOT destroy on Strict Mode double-invoke or hot-reload re-runs —
+      // those are not real unmounts and nulling the socket here causes the crash.
       if (!user && socketRef.current) {
+        console.log('User logged out — destroying socket.');
         socketRef.current.disconnect();
         socketRef.current = null;
-        setSocket(null);
         setIsConnected(false);
+        setSocketReady(false);
       }
     };
   }, [user]);
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected }}>
+    // Expose socketRef.current directly — this is always the live instance.
+    // It never becomes null while the user is logged in.
+    <SocketContext.Provider value={{ socket: socketRef.current, isConnected }}>
       {children}
     </SocketContext.Provider>
   );
