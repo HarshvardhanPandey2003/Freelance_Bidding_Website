@@ -1,12 +1,10 @@
 // frontend/src/components/Bids.jsx
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 export const Bids = ({ bids, onDelete }) => {
-  const { user, loading: authLoading } = useAuth(); // Use AuthProvider
-  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   //  console.log(`Bids component: user: ${user.data}, authLoading: ${authLoading}`);
   if (authLoading) return <div>Loading...</div>;
 
