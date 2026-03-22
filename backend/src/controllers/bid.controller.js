@@ -33,10 +33,10 @@ const normalizeBidResponse = (bid, projectData = null) => {
     _id: bid._id.toString(),
     project: projectData ? {
       _id: projectData._id.toString(),
-      client: projectData.client.toString()
+      client: projectData.client?.toString() ?? null
     } : {
       _id: bid.project._id ? bid.project._id.toString() : bid.project.toString(),
-      client: projectData?.client?.toString() || bid.project.client?.toString()
+      client: bid.project?.client?.toString() ?? null
     },
     freelancer: {
       _id: bid.freelancer._id.toString(),
@@ -89,7 +89,7 @@ export const createBid = asyncHandler(async (req, res) => {
 
     // Publish to Redis instead of direct Socket.io emission
     await publishBidEvent('newBid', projectId, responseBid);
-    
+
     res.status(201).json(responseBid);
 
   } catch (error) {
@@ -172,8 +172,8 @@ export const deleteBid = asyncHandler(async (req, res) => {
   await bid.deleteOne();
 
   // Publish to Redis instead of direct Socket.io emission
-  await publishBidEvent('bidDelete', projectId, { 
-    projectId, 
+  await publishBidEvent('bidDelete', projectId, {
+    projectId,
     bidId: bidId.toString()
   });
 

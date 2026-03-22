@@ -22,7 +22,10 @@ export const FreelanceProject = () => {
   const normalizeBid = (bid) => ({
     ...bid,
     _id: bid._id?.toString(),
-    project: bid.project?.toString() || id,
+    project: {
+      _id: bid.project?._id?.toString() || bid.project?.toString() || id,
+      client: bid.project?.client?.toString() ?? null
+    },
     freelancer: {
       ...bid.freelancer,
       _id: bid.freelancer?._id?.toString()
@@ -241,9 +244,8 @@ export const FreelanceProject = () => {
             <span>Budget: ${project.budget.toFixed(2)}</span>
             <span>Deadline: {format(new Date(project.deadline), 'PP')}</span>
             <span
-              className={`px-2 py-1 rounded-full ${
-                project.status === 'OPEN' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
-              }`}
+              className={`px-2 py-1 rounded-full ${project.status === 'OPEN' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                }`}
             >
               {project.status}
             </span>
@@ -254,8 +256,8 @@ export const FreelanceProject = () => {
               <h3 className="text-lg font-semibold mb-2">Required Skills</h3>
               <div className="flex flex-wrap gap-2">
                 {project.skills.map((skill) => (
-                  <span 
-                    key={skill} 
+                  <span
+                    key={skill}
                     className="bg-indigo-500/20 text-indigo-300 text-sm font-medium px-2 py-1 rounded"
                   >
                     {skill}
