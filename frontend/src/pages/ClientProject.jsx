@@ -56,42 +56,26 @@ const ClientProject = () => {
 
   // Socket connection and event handling
   useEffect(() => {
-    if (!socket || !id) return;
+      // 1. Guard Clause
+      if (!socket || !isConnected || !id) {
+        setSocketConnected(false);
+        return;
+      }
 
-    let cleanup = [];
-    let eventListenersSetup = false;
+      console.log(`Client joining project room: ${id}`);
 
-    const setupEventListeners = () => {
-      if (eventListenersSetup) return;
-      
-      console.log('Setting up bid event listeners for client');
-      
+      // 2. Define Handlers
       const handleNewBid = (bidData) => {
-        console.log('Client received newBid:', bidData);
-        
-        // Verify this is for current project
         const bidProjectId = bidData.project?._id?.toString() || bidData.project?.toString();
-        if (bidProjectId !== id) {
-          console.log('Bid not for current project, ignoring');
-          return;
-        }
+        if (bidProjectId !== id) return;
 
         setLocalBids(prev => {
-          const existingIndex = prev.findIndex(bid => bid._id === bidData._id?.toString());
-          if (existingIndex >= 0) {
-            console.log('Bid already exists, preventing duplicate');
-            return prev;
-          }
-          
-          const normalizedBid = normalizeBid(bidData);
-          console.log('Adding new bid to client state:', normalizedBid);
-          return [...prev, normalizedBid];
+          if (prev.some(bid => bid._id === bidData._id?.toString())) return prev;
+          return [...prev, normalizeBid(bidData)];
         });
       };
 
       const handleBidUpdate = (bidData) => {
-        console.log('Client received bidUpdate:', bidData);
-        
         const bidProjectId = bidData.project?._id?.toString() || bidData.project?.toString();
         if (bidProjectId !== id) return;
 
@@ -101,72 +85,39 @@ const ClientProject = () => {
       };
 
       const handleBidDelete = ({ projectId, bidId }) => {
-        console.log('Client received bidDelete:', { projectId, bidId });
-        
         if (projectId !== id) return;
-
         setLocalBids(prev => prev.filter(bid => bid._id !== bidId?.toString()));
       };
-
-      socket.on('newBid', handleNewBid);
-      socket.on('bidUpdate', handleBidUpdate);
-      socket.on('bidDelete', handleBidDelete);
-      
-      eventListenersSetup = true;
-
-      cleanup.push(() => {
-        socket.off('newBid', handleNewBid);
-        socket.off('bidUpdate', handleBidUpdate);
-        socket.off('bidDelete', handleBidDelete);
-        eventListenersSetup = false;
-      });
-    };
-
-    const joinProjectRoom = () => {
-      console.log(`Client joining project room: ${id}`);
-      socket.emit('joinProject', id);
 
       const handleJoinedProject = ({ projectId }) => {
         if (projectId === id) {
           console.log('Client successfully joined project room');
           setSocketConnected(true);
-          setupEventListeners();
         }
       };
 
-      const handleError = ({ message }) => {
-        console.error('Socket error:', message);
-        setSocketConnected(false);
-      };
-
+      // 3. Attach Listeners
+      socket.on('newBid', handleNewBid);
+      socket.on('bidUpdate', handleBidUpdate);
+      socket.on('bidDelete', handleBidDelete);
       socket.on('joinedProject', handleJoinedProject);
-      socket.on('error', handleError);
+      socket.on('error', (err) => console.error('Socket error:', err));
 
-      cleanup.push(() => {
-        socket.emit('leaveProject', id);
-        socket.off('joinedProject', handleJoinedProject);
-        socket.off('error', handleError);
+      // 4. Emit Join
+      socket.emit('joinProject', id);
+
+      // 5. Bulletproof Cleanup
+      return () => {
+        console.log('Cleaning up client socket listeners');
+        socket?.off('newBid', handleNewBid);
+        socket?.off('bidUpdate', handleBidUpdate);
+        socket?.off('bidDelete', handleBidDelete);
+        socket?.off('joinedProject', handleJoinedProject);
+        socket?.off('error');
+        socket?.emit('leaveProject', id);
         setSocketConnected(false);
-      });
-    };
-
-    if (socket.connected) {
-      joinProjectRoom();
-    } else {
-      const handleConnect = () => {
-        console.log('Socket connected, joining project room');
-        joinProjectRoom();
       };
-      
-      socket.on('connect', handleConnect);
-      cleanup.push(() => socket.off('connect', handleConnect));
-    }
-
-    return () => {
-      console.log('Cleaning up client socket listeners');
-      cleanup.forEach(fn => fn());
-    };
-  }, [socket, id, isConnected]);
+    }, [socket, isConnected, id]);
 
   // Rest of your component remains the same...
   if (loading) {

@@ -60,136 +60,123 @@ export const FreelanceProject = () => {
     fetchData();
   }, [id, user, authLoading]);
 
-  // Socket connection and event handling
   useEffect(() => {
-    if (!socket || !id || !user) return;
+    // 1. Guard Clause — don’t even start if basics aren’t ready
+    if (!socket || !isConnected || !id || !user) {
+      setSocketConnected(false);
+      return;
+    }
 
-    let cleanup = [];
-    let eventListenersSetup = false;
+    console.log(`Freelancer joining project room: ${id}`);
 
-    const setupEventListeners = () => {
-      if (eventListenersSetup) return;
-      
-      console.log('Setting up bid event listeners for freelancer');
-      
-      const handleNewBid = (bidData) => {
-        console.log('Freelancer received newBid:', bidData);
-        
-        const bidProjectId = bidData.project?._id?.toString() || bidData.project?.toString();
-        if (bidProjectId !== id) return;
+    // 2. Handlers (stable + scoped)
+    const handleNewBid = (bidData) => {
+      console.log('Freelancer received newBid:', bidData);
 
-        setLocalBids(prev => {
-          const existingIndex = prev.findIndex(bid => bid._id === bidData._id?.toString());
-          if (existingIndex >= 0) return prev;
-          
-          const normalizedBid = normalizeBid(bidData);
-          
-          // Update userBid if this is the current user's bid
-          if (bidData.freelancer?._id?.toString() === user._id?.toString()) {
-            setUserBid(normalizedBid);
-          }
+      const bidProjectId =
+        bidData.project?._id?.toString() || bidData.project?.toString();
 
-          return [...prev, normalizedBid];
-        });
-      };
+      if (bidProjectId !== id) return;
 
-      const handleBidUpdate = (bidData) => {
-        console.log('Freelancer received bidUpdate:', bidData);
-        
-        const bidProjectId = bidData.project?._id?.toString() || bidData.project?.toString();
-        if (bidProjectId !== id) return;
+      setLocalBids((prev) => {
+        if (prev.some((bid) => bid._id === bidData._id?.toString())) return prev;
 
-        setLocalBids(prev => prev.map(bid => {
+        const normalizedBid = normalizeBid(bidData);
+
+        if (
+          bidData.freelancer?._id?.toString() === user._id?.toString()
+        ) {
+          setUserBid(normalizedBid);
+        }
+
+        return [...prev, normalizedBid];
+      });
+    };
+
+    const handleBidUpdate = (bidData) => {
+      console.log('Freelancer received bidUpdate:', bidData);
+
+      const bidProjectId =
+        bidData.project?._id?.toString() || bidData.project?.toString();
+
+      if (bidProjectId !== id) return;
+
+      setLocalBids((prev) =>
+        prev.map((bid) => {
           if (bid._id === bidData._id?.toString()) {
             const updatedBid = normalizeBid(bidData);
-            
-            // Update userBid if this is the current user's bid
-            if (bidData.freelancer?._id?.toString() === user._id?.toString()) {
+
+            if (
+              bidData.freelancer?._id?.toString() === user._id?.toString()
+            ) {
               setUserBid(updatedBid);
             }
-            
+
             return updatedBid;
           }
           return bid;
-        }));
-      };
-
-      const handleBidDelete = ({ projectId, bidId }) => {
-        console.log('Freelancer received bidDelete:', { projectId, bidId });
-        
-        if (projectId !== id) return;
-
-        setLocalBids(prev => {
-          const deletedBid = prev.find(bid => bid._id === bidId?.toString());
-          
-          // Clear userBid if this was the current user's bid
-          if (deletedBid && deletedBid.freelancer?._id === user._id?.toString()) {
-            setUserBid(null);
-          }
-
-          return prev.filter(bid => bid._id !== bidId?.toString());
-        });
-      };
-
-      socket.on('newBid', handleNewBid);
-      socket.on('bidUpdate', handleBidUpdate);
-      socket.on('bidDelete', handleBidDelete);
-      
-      eventListenersSetup = true;
-
-      cleanup.push(() => {
-        socket.off('newBid', handleNewBid);
-        socket.off('bidUpdate', handleBidUpdate);
-        socket.off('bidDelete', handleBidDelete);
-        eventListenersSetup = false;
-      });
+        })
+      );
     };
 
-    const joinProjectRoom = () => {
-      console.log(`Freelancer joining project room: ${id}`);
-      socket.emit('joinProject', id);
+    const handleBidDelete = ({ projectId, bidId }) => {
+      console.log('Freelancer received bidDelete:', { projectId, bidId });
 
-      const handleJoinedProject = ({ projectId }) => {
-        if (projectId === id) {
-          console.log('Freelancer successfully joined project room');
-          setSocketConnected(true);
-          setupEventListeners();
+      if (projectId !== id) return;
+
+      setLocalBids((prev) => {
+        const deletedBid = prev.find(
+          (bid) => bid._id === bidId?.toString()
+        );
+
+        if (
+          deletedBid &&
+          deletedBid.freelancer?._id === user._id?.toString()
+        ) {
+          setUserBid(null);
         }
-      };
 
-      const handleError = ({ message }) => {
-        console.error('Socket error:', message);
-        setSocketConnected(false);
-      };
-
-      socket.on('joinedProject', handleJoinedProject);
-      socket.on('error', handleError);
-
-      cleanup.push(() => {
-        socket.emit('leaveProject', id);
-        socket.off('joinedProject', handleJoinedProject);
-        socket.off('error', handleError);
-        setSocketConnected(false);
+        return prev.filter((bid) => bid._id !== bidId?.toString());
       });
     };
 
-    if (socket.connected) {
-      joinProjectRoom();
-    } else {
-      const handleConnect = () => {
-        console.log('Socket connected, joining project room');
-        joinProjectRoom();
-      };
-      
-      socket.on('connect', handleConnect);
-      cleanup.push(() => socket.off('connect', handleConnect));
-    }
+    const handleJoinedProject = ({ projectId }) => {
+      if (projectId === id) {
+        console.log('Freelancer successfully joined project room');
+        setSocketConnected(true);
+      }
+    };
 
+    const handleError = (err) => {
+      console.error('Socket error:', err);
+      setSocketConnected(false);
+    };
+
+    // 3. Attach listeners IMMEDIATELY (this is the key fix)
+    socket.on('newBid', handleNewBid);
+    socket.on('bidUpdate', handleBidUpdate);
+    socket.on('bidDelete', handleBidDelete);
+    socket.on('joinedProject', handleJoinedProject);
+    socket.on('error', handleError);
+
+    // 4. Join room (handle reconnect implicitly via dependency on isConnected)
+    socket.emit('joinProject', id);
+
+    // 5. Cleanup (no leaks, no duplicates)
     return () => {
       console.log('Cleaning up freelancer socket listeners');
-      cleanup.forEach(fn => fn());
+
+      socket?.off('newBid', handleNewBid);
+      socket?.off('bidUpdate', handleBidUpdate);
+      socket?.off('bidDelete', handleBidDelete);
+      socket?.off('joinedProject', handleJoinedProject);
+      socket?.off('error', handleError);
+
+      socket?.emit('leaveProject', id);
+
+      setSocketConnected(false);
     };
-  }, [socket, id, user, isConnected]);
+  }, [socket, isConnected, id, user]);
 
   // Handle bid deletion
   const handleDeleteBid = async (bidId) => {
