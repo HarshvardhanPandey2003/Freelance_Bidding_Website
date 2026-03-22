@@ -42,6 +42,7 @@ export const Bids = ({ bids, onDelete }) => {
                 {/* Only show Delete button for the bid owner (freelancer) */}
                 {user?._id?.toString() === bid.freelancer?._id?.toString() && (
                   <>
+                    {console.log(`Rendering delete button for bid ${bid._id}`)}
                     <button
                       onClick={() => onDelete(bid._id)}
                       className="text-red-400 hover:text-red-300 text-sm"
@@ -51,6 +52,7 @@ export const Bids = ({ bids, onDelete }) => {
                   </>
                 )}
               </div>
+              {console.log(`Rendering bid card for bid._id=${bid._id} project._id=${bid.project?._id}`)}
             </div>
           ))}
         </div>
