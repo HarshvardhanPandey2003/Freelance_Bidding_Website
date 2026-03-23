@@ -179,7 +179,7 @@ export const FreelanceProject = () => {
 
       setSocketConnected(false);
     };
-  }, [socket, isConnected, id, user]);
+  }, [socket, isConnected, id, user?._id]);
 
   // Handle bid deletion
   const handleDeleteBid = async (bidId) => {

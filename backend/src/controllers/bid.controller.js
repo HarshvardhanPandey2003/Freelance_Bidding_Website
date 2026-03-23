@@ -38,10 +38,11 @@ const normalizeBidResponse = (bid, projectData = null) => {
       _id: bid.project._id ? bid.project._id.toString() : bid.project.toString(),
       client: bid.project?.client?.toString() ?? null
     },
-    freelancer: {
-      _id: bid.freelancer._id.toString(),
-      username: bid.freelancer.username
-    },
+    // FIX: Safely check if freelancer exists before accessing _id
+    freelancer: bid.freelancer ? {
+      _id: bid.freelancer._id?.toString(),
+      username: bid.freelancer.username || 'Deleted User'
+    } : null,
     createdAt: bid.createdAt.toISOString(),
     updatedAt: bid.updatedAt.toISOString()
   };
@@ -209,17 +210,18 @@ export const getProjectBids = asyncHandler(async (req, res) => {
     .lean();
 
   // Normalize bid structure
-  const processedBids = bids.map(bid => ({
+const processedBids = bids.map(bid => ({
     ...bid,
     _id: bid._id.toString(),
     project: {
       _id: projectId.toString(),
       client: project.client.toString()
     },
-    freelancer: {
-      _id: bid.freelancer._id.toString(),
-      username: bid.freelancer.username
-    },
+    // Safely handle orphaned bids
+    freelancer: bid.freelancer ? {
+      _id: bid.freelancer._id?.toString(),
+      username: bid.freelancer.username || 'Deleted User'
+    } : { _id: 'unknown', username: 'Deleted User' },
     createdAt: bid.createdAt.toISOString(),
     updatedAt: bid.updatedAt.toISOString()
   }));
