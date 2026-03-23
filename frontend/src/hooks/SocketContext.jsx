@@ -39,7 +39,7 @@ export const SocketProvider = ({ children }) => {
       setIsConnected(false);
       // ⚠️ Do NOT null socketRef.current here.
       // socket.io manages reconnect internally — if we null the ref,
-      // child useEffects crash on their next socket.on() call.
+      // child useEffects crash on their next socket?.on() call.
     });
 
     instance.on('connect_error', (err) => {

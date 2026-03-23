@@ -42,7 +42,7 @@ const ChatWindow = ({ currentUser, partner }) => {
       setMessages((prev) => [...prev, data]);
     };
     // Listen for incoming messages from the server.
-    socket.on('receiveMessage', handleReceiveMessage);
+    socket?.on('receiveMessage', handleReceiveMessage);
 
     return () => {
       // off means to stop listening for the event when the component unmounts. 

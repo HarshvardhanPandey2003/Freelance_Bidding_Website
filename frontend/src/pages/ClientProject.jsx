@@ -99,11 +99,11 @@ const ClientProject = () => {
     const handleError = (err) => console.error('Socket error:', err);
 
     // 3. Attach Listeners
-    socket.on('newBid', handleNewBid);
-    socket.on('bidUpdate', handleBidUpdate);
-    socket.on('bidDelete', handleBidDelete);
-    socket.on('joinedProject', handleJoinedProject);
-    socket.on('error', handleError);
+    socket?.on('newBid', handleNewBid);
+    socket?.on('bidUpdate', handleBidUpdate);
+    socket?.on('bidDelete', handleBidDelete);
+    socket?.on('joinedProject', handleJoinedProject);
+    socket?.on('error', handleError);
 
     // 4. Emit Join
     socket.emit('joinProject', id);

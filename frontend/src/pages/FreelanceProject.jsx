@@ -156,11 +156,11 @@ export const FreelanceProject = () => {
     };
 
     // 3. Attach listeners IMMEDIATELY (this is the key fix)
-    socket.on('newBid', handleNewBid);
-    socket.on('bidUpdate', handleBidUpdate);
-    socket.on('bidDelete', handleBidDelete);
-    socket.on('joinedProject', handleJoinedProject);
-    socket.on('error', handleError);
+    socket?.on('newBid', handleNewBid);
+    socket?.on('bidUpdate', handleBidUpdate);
+    socket?.on('bidDelete', handleBidDelete);
+    socket?.on('joinedProject', handleJoinedProject);
+    socket?.on('error', handleError);
 
     // 4. Join room (handle reconnect implicitly via dependency on isConnected)
     socket.emit('joinProject', id);

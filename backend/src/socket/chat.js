@@ -22,7 +22,7 @@ export const chatSocketHandler = (socket) => {
   // Event: "startChat"
   // Data payload: { partnerId }
   // Callback: returns { room, messages } or an error.
-  socket.on('startChat', async ({ partnerId }, callback) => {
+  socket?.on('startChat', async ({ partnerId }, callback) => {
     try {
       const user = socket.user; // This comes from your JWT-based auth middleware.
       let paymentRecord;
@@ -72,7 +72,7 @@ export const chatSocketHandler = (socket) => {
   // Callback: returns a success or error message.
   // SO here we send the message to the room and get another callback with the message data.
   // Which we store in MongoDB and the emit to the room.
-  socket.on('sendMessage', async (data, callback) => {
+  socket?.on('sendMessage', async (data, callback) => {
     try {
       const { room, partnerId, message } = data;
       const user = socket.user;
