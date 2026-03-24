@@ -12,10 +12,7 @@ const generateRoomName = (userId1, userId2) => {
     : `chat_${userId2}_${userId1}`;
 };
 
-/**
- * Socket.io chat handler.
- * Expects that socket.user is available from the authentication middleware.
- */
+
 // What exactly this function does is handle chat-related events for authenticated users.
 // We use callbacks because to return data back to the client after an event is emitted.
 export const chatSocketHandler = (socket) => {
