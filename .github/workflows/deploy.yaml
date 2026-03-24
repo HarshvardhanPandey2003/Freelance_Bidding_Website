@@ -23,8 +23,10 @@ jobs:
 
       - name: Build and Patch Images (Podman)
         run: |
-          podman build -t ${{ env.BACKEND_IMG }} ./backend
-          podman build -t ${{ env.FRONTEND_IMG }} ./frontend
+        # The --no-cache flag forces Podman to actually move the new dist folder into Nginx
+          podman build --no-cache -t ${{ env.BACKEND_IMG }} ./backend
+          podman build --no-cache -t ${{ env.FRONTEND_IMG }} ./frontend
+
           # The || true prevents the pipeline from crashing if the tag already exists
           podman tag localhost/${{ env.BACKEND_IMG }} ${{ env.BACKEND_IMG }} || true
           podman tag localhost/${{ env.FRONTEND_IMG }} ${{ env.FRONTEND_IMG }} || true
