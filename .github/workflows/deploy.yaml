@@ -32,8 +32,9 @@ jobs:
       - name: Sideload Images to Minikube
         run: |
           echo "Removing old cached images from Minikube..."
-          minikube image rm ${{ env.BACKEND_IMG }} || true
-          minikube image rm ${{ env.FRONTEND_IMG }} || true
+          # EXPLICITLY target the docker.io prefix that Minikube uses internally
+          minikube image rm docker.io/${{ env.BACKEND_IMG }} || true
+          minikube image rm docker.io/${{ env.FRONTEND_IMG }} || true
           
           echo "Injecting fresh images into Minikube registry..."
           minikube image load ${{ env.BACKEND_IMG }}

@@ -18,7 +18,7 @@ spec:
       containers:
       - name: backend
         image: harshvardhan2003/freelance-backend:latest
-        imagePullPolicy: Never # Forces Minikube to use the local sideloaded image
+        imagePullPolicy: IfNotPresent # Forces Minikube to use the local sideloaded image
         resources:
           requests:
             cpu: "100m"
