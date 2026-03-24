@@ -26,7 +26,7 @@ export const SocketProvider = ({ children }) => {
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
       timeout: 20000,
-      transports: ['websocket'],
+      transports: ['polling', 'websocket'], // Starts with reliable HTTP, then upgrades to WS
     });
 
     instance.on('connect', () => {
