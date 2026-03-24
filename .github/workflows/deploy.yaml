@@ -8,11 +8,10 @@ on:
 jobs:
   build-and-deploy:
     runs-on: self-hosted
-
     env:
       NAMESPACE: freelance-hub
-      BACKEND_IMG: harshvardhan2003/freelance-backend
-      FRONTEND_IMG: harshvardhan2003/freelance-frontend
+      BACKEND_IMG: harshvardhan2003/freelance-backend:latest
+      FRONTEND_IMG: harshvardhan2003/freelance-frontend:latest
 
     steps:
       - name: Checkout Source Code
@@ -22,33 +21,33 @@ jobs:
         run: |
           kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
-      # NEW PATCH (Unique tagging + no-cache builds)
-      - name: Build and Tag Images (Podman)
+      - name: Build and Patch Images (Podman)
         run: |
-          echo "Building fresh images..."
+          # Keep --no-cache for now to guarantee fresh Vite builds
           podman build --no-cache -t localhost/${{ env.BACKEND_IMG }} ./backend
           podman build --no-cache -t localhost/${{ env.FRONTEND_IMG }} ./frontend
+          
+          # CRITICAL: Tag with the unique GitHub Run ID instead of just 'latest'
+          podman tag localhost/${{ env.BACKEND_IMG }} harshvardhan2003/freelance-backend:${{ github.run_id }}
+          podman tag localhost/${{ env.FRONTEND_IMG }} harshvardhan2003/freelance-frontend:${{ github.run_id }}
 
-          echo "Tagging with unique GitHub Run ID..."
-          podman tag localhost/${{ env.BACKEND_IMG }} ${{ env.BACKEND_IMG }}:${{ github.run_id }}
-          podman tag localhost/${{ env.FRONTEND_IMG }} ${{ env.FRONTEND_IMG }}:${{ github.run_id }}
-
-      # Updated sideload with unique tags
       - name: Sideload Images to Minikube
         run: |
-          echo "Injecting images into Minikube..."
-          minikube image load ${{ env.BACKEND_IMG }}:${{ github.run_id }}
-          minikube image load ${{ env.FRONTEND_IMG }}:${{ github.run_id }}
+          echo "Injecting dynamically tagged images into Minikube registry..."
+          minikube image load harshvardhan2003/freelance-backend:${{ github.run_id }}
+          minikube image load harshvardhan2003/freelance-frontend:${{ github.run_id }}
 
       - name: Validate Kubernetes Manifests
         run: |
+          echo "Dry-run check to ensure YAML syntax is valid..."
           kubectl apply --dry-run=client -f k8s-manifests/configmaps/
           kubectl apply --dry-run=client -f k8s-manifests/deployments/
 
       - name: Generate Local Secrets File
         run: |
+          echo "Generating local-secrets.yaml from GitHub Secrets..."          
           mkdir -p k8s-manifests/secrets
-
+          
           cat <<EOF > k8s-manifests/secrets/local-secrets.yaml
           apiVersion: v1
           kind: Secret
@@ -70,40 +69,54 @@ jobs:
           stringData:
             VITE_RAZORPAY_KEY: "${{ secrets.RAZORPAY_KEY_ID }}"
           EOF
+          
+          echo "Secrets file generated successfully!"
 
       - name: Infrastructure Sync
         run: |
+          echo "Applying Secrets, ConfigMaps, and HPA..."
           kubectl apply -f k8s-manifests/secrets/local-secrets.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f k8s-manifests/configmaps/app-config.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f k8s-manifests/autoscaling/hpa-combined.yaml -n ${{ env.NAMESPACE }}
 
-      # Inject dynamic image tags (CRITICAL FIX)
-      - name: Inject Image Tags into Manifests
+      - name: Zero-Downtime Deployment
         run: |
-          sed -i "s|${{ env.BACKEND_IMG }}:latest|${{ env.BACKEND_IMG }}:${{ github.run_id }}|g" k8s-manifests/deployments/backend.yaml
-          sed -i "s|${{ env.FRONTEND_IMG }}:latest|${{ env.FRONTEND_IMG }}:${{ github.run_id }}|g" k8s-manifests/deployments/frontend.yaml
-
-      - name: Deploy Application
-        run: |
+          echo "Injecting unique tags into Kubernetes YAML manifests..."
+          # This dynamically finds ':latest' in your YAML files and replaces it with the unique Run ID
+          sed -i "s|harshvardhan2003/freelance-backend:latest|harshvardhan2003/freelance-backend:${{ github.run_id }}|g" k8s-manifests/deployments/backend.yaml
+          sed -i "s|harshvardhan2003/freelance-frontend:latest|harshvardhan2003/freelance-frontend:${{ github.run_id }}|g" k8s-manifests/deployments/frontend.yaml
+          
+          echo "Deploying Application Components..."
           kubectl apply -f k8s-manifests/deployments/redis.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f k8s-manifests/deployments/backend.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f k8s-manifests/deployments/frontend.yaml -n ${{ env.NAMESPACE }}
           kubectl apply -f k8s-manifests/ingress/ingress.yaml -n ${{ env.NAMESPACE }}
 
-      # Removed rollout restart (not needed anymore due to unique tags)
-
-      - name: Deployment Health Check
+      - name: Deployment Health Verification
         run: |
+          echo "Verifying rollout status..."
           kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=120s
           kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=120s
 
-      - name: Cleanup
+      - name: Post-Deploy Cleanup
         if: always()
         run: |
+          echo "Cleaning up dead containers and dangling images to save disk space..."
+          # Clean up stopped temporary containers first
           podman container prune -f || true
+          # Then clean up the dangling images
           podman image prune -f || true
 
-      - name: Output URLs
+      - name: Output Application URLs
         run: |
-          echo "Frontend: http://freelance.local"
-          echo "Backend: http://freelance.local/api"
+          echo "DEPLOYMENT SUCCESSFUL!"
+          echo "========================================="
+          echo "Frontend is live at: http://freelance.local"
+          echo "Backend API is at:  http://freelance.local/api/auth"
+          echo "========================================="
+          echo "Note: Ensure 'minikube tunnel' is running in a separate WSL terminal to access these links."
+          
+          # This writes a visual summary to the GitHub Actions UI
+          echo "### Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend:** [http://freelance.local](http://freelance.local)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend API:** [http://freelance.local/api](http://freelance.local/api)" >> $GITHUB_STEP_SUMMARY
