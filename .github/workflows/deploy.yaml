@@ -23,19 +23,15 @@ jobs:
 
       - name: Build and Patch Images (Podman)
         run: |
-          # Keep --no-cache for now to guarantee fresh Vite builds
-          podman build --no-cache -t localhost/${{ env.BACKEND_IMG }} ./backend
-          podman build --no-cache -t localhost/${{ env.FRONTEND_IMG }} ./frontend
-          
-          # CRITICAL: Tag with the unique GitHub Run ID instead of just 'latest'
-          podman tag localhost/${{ env.BACKEND_IMG }} harshvardhan2003/freelance-backend:${{ github.run_id }}
-          podman tag localhost/${{ env.FRONTEND_IMG }} harshvardhan2003/freelance-frontend:${{ github.run_id }}
+          # Build and tag directly with the docker.io/ prefix and Run ID
+          podman build --no-cache -t docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }} ./backend
+          podman build --no-cache -t docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }} ./frontend
 
       - name: Sideload Images to Minikube
         run: |
-          echo "Injecting dynamically tagged images into Minikube registry..."
-          minikube image load harshvardhan2003/freelance-backend:${{ github.run_id }}
-          minikube image load harshvardhan2003/freelance-frontend:${{ github.run_id }}
+          echo "Injecting explicitly tagged images into Minikube registry..."
+          minikube image load docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}
+          minikube image load docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}
 
       - name: Validate Kubernetes Manifests
         run: |
@@ -69,8 +65,6 @@ jobs:
           stringData:
             VITE_RAZORPAY_KEY: "${{ secrets.RAZORPAY_KEY_ID }}"
           EOF
-          
-          echo "Secrets file generated successfully!"
 
       - name: Infrastructure Sync
         run: |
@@ -82,9 +76,9 @@ jobs:
       - name: Zero-Downtime Deployment
         run: |
           echo "Injecting unique tags into Kubernetes YAML manifests..."
-          # This dynamically finds ':latest' in your YAML files and replaces it with the unique Run ID
-          sed -i "s|harshvardhan2003/freelance-backend:latest|harshvardhan2003/freelance-backend:${{ github.run_id }}|g" k8s-manifests/deployments/backend.yaml
-          sed -i "s|harshvardhan2003/freelance-frontend:latest|harshvardhan2003/freelance-frontend:${{ github.run_id }}|g" k8s-manifests/deployments/frontend.yaml
+          # Notice we are now replacing the text with the full docker.io/... URL
+          sed -i "s|harshvardhan2003/freelance-backend:latest|docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}|g" k8s-manifests/deployments/backend.yaml
+          sed -i "s|harshvardhan2003/freelance-frontend:latest|docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}|g" k8s-manifests/deployments/frontend.yaml
           
           echo "Deploying Application Components..."
           kubectl apply -f k8s-manifests/deployments/redis.yaml -n ${{ env.NAMESPACE }}
