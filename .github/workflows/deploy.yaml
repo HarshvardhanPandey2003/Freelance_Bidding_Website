@@ -23,14 +23,13 @@ jobs:
 
       - name: Build and Patch Images (Podman)
         run: |
-          # Build explicitly with the unique Run ID
-          podman build --no-cache -t harshvardhan2003/freelance-backend:${{ github.run_id }} ./backend
-          podman build --no-cache -t harshvardhan2003/freelance-frontend:${{ github.run_id }} ./frontend
+          # Force the explicit docker.io/ prefix to stop Podman from adding localhost/
+          podman build --no-cache -t docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }} ./backend
+          podman build --no-cache -t docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }} ./frontend
           
-          # THE FIX: Export the built images as physical .tar files
           echo "Saving images to physical tar archives..."
-          podman save -o backend.tar harshvardhan2003/freelance-backend:${{ github.run_id }}
-          podman save -o frontend.tar harshvardhan2003/freelance-frontend:${{ github.run_id }}
+          podman save -o backend.tar docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}
+          podman save -o frontend.tar docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}
 
       - name: Sideload Images to Minikube
         run: |
@@ -82,7 +81,7 @@ jobs:
       - name: Zero-Downtime Deployment
         run: |
           echo "Injecting unique tags into Kubernetes YAML manifests..."
-          # Notice we are now replacing the text with the full docker.io/... URL
+          # Explicitly inject the docker.io/ prefix into the YAML so Kubernetes matches the tarball exactly
           sed -i "s|harshvardhan2003/freelance-backend:latest|docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}|g" k8s-manifests/deployments/backend.yaml
           sed -i "s|harshvardhan2003/freelance-frontend:latest|docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}|g" k8s-manifests/deployments/frontend.yaml
           
