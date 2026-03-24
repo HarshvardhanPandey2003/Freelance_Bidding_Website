@@ -23,7 +23,7 @@ jobs:
 
       - name: Build and Patch Images (Podman)
         run: |
-        # The --no-cache flag forces Podman to actually move the new dist folder into Nginx
+          # The --no-cache flag forces Podman to actually move the new dist folder into Nginx
           podman build --no-cache -t ${{ env.BACKEND_IMG }} ./backend
           podman build --no-cache -t ${{ env.FRONTEND_IMG }} ./frontend
 
