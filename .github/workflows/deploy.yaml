@@ -23,15 +23,21 @@ jobs:
 
       - name: Build and Patch Images (Podman)
         run: |
-          # Build and tag directly with the docker.io/ prefix and Run ID
-          podman build --no-cache -t docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }} ./backend
-          podman build --no-cache -t docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }} ./frontend
+          # Build explicitly with the unique Run ID
+          podman build --no-cache -t harshvardhan2003/freelance-backend:${{ github.run_id }} ./backend
+          podman build --no-cache -t harshvardhan2003/freelance-frontend:${{ github.run_id }} ./frontend
+          
+          # THE FIX: Export the built images as physical .tar files
+          echo "Saving images to physical tar archives..."
+          podman save -o backend.tar harshvardhan2003/freelance-backend:${{ github.run_id }}
+          podman save -o frontend.tar harshvardhan2003/freelance-frontend:${{ github.run_id }}
 
       - name: Sideload Images to Minikube
         run: |
-          echo "Injecting explicitly tagged images into Minikube registry..."
-          minikube image load docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}
-          minikube image load docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}
+          echo "Loading physical tar archives directly into Minikube..."
+          # Minikube reads the file directly, bypassing all registry confusion
+          minikube image load backend.tar
+          minikube image load frontend.tar
 
       - name: Validate Kubernetes Manifests
         run: |
