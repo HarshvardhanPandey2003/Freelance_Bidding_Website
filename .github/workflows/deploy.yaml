@@ -31,7 +31,11 @@ jobs:
 
       - name: Sideload Images to Minikube
         run: |
-          echo "Injecting images into Minikube registry..."
+          echo "Removing old cached images from Minikube..."
+          minikube image rm ${{ env.BACKEND_IMG }} || true
+          minikube image rm ${{ env.FRONTEND_IMG }} || true
+          
+          echo "Injecting fresh images into Minikube registry..."
           minikube image load ${{ env.BACKEND_IMG }}
           minikube image load ${{ env.FRONTEND_IMG }}
 
