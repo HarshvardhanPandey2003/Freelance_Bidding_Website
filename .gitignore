@@ -27,3 +27,4 @@ yarn-error.log*
 /git_commands
 /documentation.txt
 /k8s-manifests/secrets/local-secrets.yaml
+/logs

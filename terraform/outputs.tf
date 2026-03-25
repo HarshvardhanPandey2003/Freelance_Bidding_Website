@@ -3,7 +3,10 @@ output "namespace" {
   value       = kubernetes_namespace.freelance_app.metadata[0].name
 }
 
-output "grafana_access_instructions" {
-  description = "How to access your local Grafana dashboard"
-  value       = "Run this command: kubectl port-forward svc/prometheus-stack-grafana 8080:80 -n freelance-hub. Then open http://localhost:8080 (Login: admin / admin)"
+output "grafana_url" {
+  value = "Run: kubectl port-forward svc/prometheus-stack-grafana 8080:80 -n ${var.namespace}"
+}
+
+output "loki_status" {
+  value = "Loki is installed. Add http://loki:3100 as a Data Source in Grafana."
 }

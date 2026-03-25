@@ -1,0 +1,16 @@
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: freelance-instrumentation
+  namespace: freelance-hub
+spec:
+  exporter:
+    endpoint: http://otel-collector:4317
+  propagators:
+    - tracecontext
+    - baggage
+  sampler:
+    type: parentbased_always_on
+  # This targets Node.js specifically
+  nodejs:
+    image: ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-nodejs:latest
