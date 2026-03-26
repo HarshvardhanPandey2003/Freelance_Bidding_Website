@@ -41,7 +41,7 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 70 # If CPU usage exceeds 70%, scale up pods
+        averageUtilization: 70 # If CPU usage exceeds 70%, scale up the pods
   - type: Resource
     resource:
       name: memory
