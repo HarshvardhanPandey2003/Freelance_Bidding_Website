@@ -14,6 +14,14 @@ mkdir -p "$PROJECT_DIR/logs"
 echo "Cleaning up old runner logs..."
 rm -rf "$RUNNER_DIR/_diag/"*
 
+# Enabling Metrics Server (Required for HPA)
+echo "Enabling metrics server..."
+minikube addons enable metrics-server
+
+# Wait until ready
+echo "Waiting for metrics server..."
+kubectl wait --for=condition=Ready pod -l k8s-app=metrics-server -n kube-system --timeout=60s
+
 # 3. Start Runner ONLY if not already running
 if pgrep -f "Runner.Listener" > /dev/null; then
     echo "✅ GitHub Actions Runner is already running. Skipping..."
@@ -37,6 +45,7 @@ fi
 echo "Refreshing Port-Forwards..."
 pkill -f "kubectl port-forward" || true
 
+# nohup means "run this command in the background and don't stop it even if the terminal closes"
 nohup kubectl port-forward svc/prometheus-stack-grafana 8080:80 -n freelance-hub --address 0.0.0.0 > "$PROJECT_DIR/logs/grafana.log" 2>&1 &
 nohup kubectl port-forward svc/loki-stack 3100:3100 -n freelance-hub --address 0.0.0.0 > "$PROJECT_DIR/logs/loki.log" 2>&1 &
 

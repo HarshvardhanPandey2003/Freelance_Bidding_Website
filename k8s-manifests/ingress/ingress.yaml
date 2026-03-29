@@ -27,7 +27,7 @@ spec:
             name: backend-service
             port:
               number: 5000
-      # Socket.IO routes - Use ImplementationSpecific (this worked for you before)
+      # Socket.IO routes - Use ImplementationSpecific 
       - path: /socket.io
         pathType: ImplementationSpecific
         backend:
