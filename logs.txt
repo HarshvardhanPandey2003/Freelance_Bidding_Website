@@ -1,0 +1,441 @@
+
+==> Audit <==
+┌────────────┬─────────────────────────────────────────────┬──────────┬───────┬─────────┬─────────────────────┬─────────────────────┐
+│  COMMAND   │                    ARGS                     │ PROFILE  │ USER  │ VERSION │     START TIME      │      END TIME       │
+├────────────┼─────────────────────────────────────────────┼──────────┼───────┼─────────┼─────────────────────┼─────────────────────┤
+│ image      │ load backend.tar                            │ minikube │ santj │ v1.38.1 │ 26 Mar 26 06:42 UTC │ 26 Mar 26 06:42 UTC │
+│ image      │ load frontend.tar                           │ minikube │ santj │ v1.38.1 │ 26 Mar 26 06:42 UTC │ 26 Mar 26 06:42 UTC │
+│ stop       │                                             │ minikube │ santj │ v1.38.1 │ 26 Mar 26 07:35 UTC │ 26 Mar 26 07:35 UTC │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 26 Mar 26 07:35 UTC │ 26 Mar 26 07:36 UTC │
+│ stop       │                                             │ minikube │ santj │ v1.38.1 │ 26 Mar 26 07:46 UTC │ 26 Mar 26 07:47 UTC │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 26 Mar 26 07:47 UTC │ 26 Mar 26 07:48 UTC │
+│ stop       │                                             │ minikube │ santj │ v1.38.1 │ 26 Mar 26 07:59 UTC │ 26 Mar 26 08:00 UTC │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 26 Mar 26 08:00 UTC │ 26 Mar 26 08:01 UTC │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 26 Mar 26 08:01 UTC │ 26 Mar 26 08:01 UTC │
+│ service    │ backend-service --url                       │ minikube │ santj │ v1.38.1 │ 26 Mar 26 13:31 UTC │                     │
+│ service    │ backend-service --url                       │ minikube │ santj │ v1.38.1 │ 26 Mar 26 13:32 UTC │                     │
+│ service    │ backend-service -n freelance-hub --url      │ minikube │ santj │ v1.38.1 │ 26 Mar 26 13:33 UTC │ 26 Mar 26 13:33 UTC │
+│ service    │ frontend-service -n freelance-hub --url     │ minikube │ santj │ v1.38.1 │ 26 Mar 26 13:34 UTC │ 26 Mar 26 13:38 UTC │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 26 Mar 26 14:15 UTC │                     │
+│ stop       │                                             │ minikube │ santj │ v1.38.1 │ 26 Mar 26 14:15 UTC │ 26 Mar 26 14:16 UTC │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 26 Mar 26 14:16 UTC │ 26 Mar 26 14:17 UTC │
+│ service    │ prometheus-stack-kube-prom-prometheus --url │ minikube │ santj │ v1.38.1 │ 26 Mar 26 14:23 UTC │                     │
+│ service    │ backend-service --url                       │ minikube │ santj │ v1.38.1 │ 26 Mar 26 18:34 UTC │                     │
+│ stop       │                                             │ minikube │ santj │ v1.38.1 │ 26 Mar 26 18:53 UTC │ 26 Mar 26 18:54 UTC │
+│ tunnel     │                                             │ minikube │ santj │ v1.38.1 │ 27 Mar 26 05:59 UTC │                     │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 27 Mar 26 06:00 UTC │ 27 Mar 26 06:00 UTC │
+│ tunnel     │                                             │ minikube │ santj │ v1.38.1 │ 27 Mar 26 06:01 UTC │                     │
+│ image      │ load backend.tar                            │ minikube │ santj │ v1.38.1 │ 27 Mar 26 13:11 UTC │ 27 Mar 26 13:12 UTC │
+│ image      │ load frontend.tar                           │ minikube │ santj │ v1.38.1 │ 27 Mar 26 13:12 UTC │ 27 Mar 26 13:12 UTC │
+│ addons     │ enable metrics-server                       │ minikube │ santj │ v1.38.1 │ 27 Mar 26 13:50 UTC │ 27 Mar 26 13:50 UTC │
+│ addons     │ enable metrics-server                       │ minikube │ santj │ v1.38.1 │ 27 Mar 26 13:53 UTC │ 27 Mar 26 13:53 UTC │
+│ image      │ load backend.tar                            │ minikube │ santj │ v1.38.1 │ 27 Mar 26 13:57 UTC │ 27 Mar 26 13:57 UTC │
+│ image      │ load frontend.tar                           │ minikube │ santj │ v1.38.1 │ 27 Mar 26 13:57 UTC │ 27 Mar 26 13:57 UTC │
+│ service    │ frontend-55db4c976-ghkzq                    │ minikube │ santj │ v1.38.1 │ 27 Mar 26 14:18 UTC │                     │
+│ service    │ frontend-55db4c976-ghkzq -n freelance-hub   │ minikube │ santj │ v1.38.1 │ 27 Mar 26 14:18 UTC │                     │
+│ ip         │                                             │ minikube │ santj │ v1.38.1 │ 27 Mar 26 14:19 UTC │ 27 Mar 26 14:19 UTC │
+│ stop       │                                             │ minikube │ santj │ v1.38.1 │ 27 Mar 26 19:31 UTC │ 27 Mar 26 19:31 UTC │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 28 Mar 26 08:39 UTC │ 28 Mar 26 08:40 UTC │
+│ addons     │ enable metrics-server                       │ minikube │ santj │ v1.38.1 │ 28 Mar 26 08:42 UTC │ 28 Mar 26 08:42 UTC │
+│ tunnel     │                                             │ minikube │ santj │ v1.38.1 │ 28 Mar 26 08:42 UTC │                     │
+│ addons     │ enable metrics-server                       │ minikube │ santj │ v1.38.1 │ 28 Mar 26 10:49 UTC │ 28 Mar 26 10:49 UTC │
+│ stop       │                                             │ minikube │ santj │ v1.38.1 │ 28 Mar 26 10:50 UTC │ 28 Mar 26 13:23 UTC │
+│ stop       │                                             │ minikube │ santj │ v1.38.1 │ 28 Mar 26 13:23 UTC │                     │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 28 Mar 26 13:24 UTC │ 28 Mar 26 13:24 UTC │
+│ addons     │ enable metrics-server                       │ minikube │ santj │ v1.38.1 │ 28 Mar 26 13:26 UTC │ 28 Mar 26 13:26 UTC │
+│ ip         │                                             │ minikube │ santj │ v1.38.1 │ 28 Mar 26 15:19 UTC │ 28 Mar 26 15:19 UTC │
+│ stop       │                                             │ minikube │ santj │ v1.38.1 │ 28 Mar 26 16:04 UTC │                     │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 28 Mar 26 16:04 UTC │                     │
+│ stop       │                                             │ minikube │ santj │ v1.38.1 │ 28 Mar 26 16:05 UTC │ 28 Mar 26 16:06 UTC │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 28 Mar 26 16:06 UTC │ 28 Mar 26 16:06 UTC │
+│ addons     │ enable metrics-server                       │ minikube │ santj │ v1.38.1 │ 28 Mar 26 16:07 UTC │ 28 Mar 26 16:07 UTC │
+│ ip         │                                             │ minikube │ santj │ v1.38.1 │ 28 Mar 26 16:15 UTC │ 28 Mar 26 16:15 UTC │
+│ addons     │ enable metrics-server                       │ minikube │ santj │ v1.38.1 │ 28 Mar 26 16:18 UTC │ 28 Mar 26 16:18 UTC │
+│ stop       │                                             │ minikube │ santj │ v1.38.1 │ 28 Mar 26 16:26 UTC │ 28 Mar 26 16:26 UTC │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 29 Mar 26 07:59 UTC │ 29 Mar 26 08:00 UTC │
+│ addons     │ enable metrics-server                       │ minikube │ santj │ v1.38.1 │ 29 Mar 26 08:04 UTC │ 29 Mar 26 08:04 UTC │
+│ tunnel     │                                             │ minikube │ santj │ v1.38.1 │ 29 Mar 26 08:04 UTC │                     │
+│ image      │ load backend.tar                            │ minikube │ santj │ v1.38.1 │ 29 Mar 26 08:07 UTC │ 29 Mar 26 08:07 UTC │
+│ image      │ load frontend.tar                           │ minikube │ santj │ v1.38.1 │ 29 Mar 26 08:07 UTC │ 29 Mar 26 08:07 UTC │
+│ docker-env │                                             │ minikube │ santj │ v1.38.1 │ 29 Mar 26 14:34 UTC │                     │
+│ stop       │                                             │ minikube │ santj │ v1.38.1 │ 29 Mar 26 18:28 UTC │ 29 Mar 26 18:29 UTC │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 30 Mar 26 02:32 UTC │                     │
+│ addons     │ enable metrics-server                       │ minikube │ santj │ v1.38.1 │ 30 Mar 26 02:34 UTC │ 30 Mar 26 02:34 UTC │
+│ tunnel     │                                             │ minikube │ santj │ v1.38.1 │ 30 Mar 26 02:34 UTC │                     │
+│ start      │                                             │ minikube │ santj │ v1.38.1 │ 30 Mar 26 02:55 UTC │                     │
+└────────────┴─────────────────────────────────────────────┴──────────┴───────┴─────────┴─────────────────────┴─────────────────────┘
+
+
+==> Last Start <==
+Log file created at: 2026/03/30 02:55:06
+Running on machine: Dell
+Binary: Built with gc go1.25.5 for linux/amd64
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+I0330 02:55:06.323092    3290 out.go:360] Setting OutFile to fd 1 ...
+I0330 02:55:06.323371    3290 out.go:413] isatty.IsTerminal(1) = true
+I0330 02:55:06.323377    3290 out.go:374] Setting ErrFile to fd 2...
+I0330 02:55:06.323385    3290 out.go:413] isatty.IsTerminal(2) = true
+I0330 02:55:06.324230    3290 root.go:338] Updating PATH: /home/santj/.minikube/bin
+I0330 02:55:06.326519    3290 out.go:368] Setting JSON to false
+I0330 02:55:06.328599    3290 start.go:134] hostinfo: {"hostname":"Dell","uptime":1045,"bootTime":1774838261,"procs":43,"os":"linux","platform":"ubuntu","platformFamily":"debian","platformVersion":"24.04","kernelVersion":"6.6.87.2-microsoft-standard-WSL2","kernelArch":"x86_64","virtualizationSystem":"kvm","virtualizationRole":"guest","hostId":"bb8e55c7-5521-4b61-9db3-b4fb3241895f"}
+I0330 02:55:06.329807    3290 start.go:144] virtualization: kvm guest
+I0330 02:55:06.352474    3290 out.go:179] 😄  minikube v1.38.1 on Ubuntu 24.04 (kvm/amd64)
+I0330 02:55:06.360652    3290 out.go:179]     ▪ MINIKUBE_ROOTLESS=true
+I0330 02:55:06.361203    3290 notify.go:220] Checking for updates...
+I0330 02:55:06.364764    3290 config.go:183] Loaded profile config "minikube": Driver=podman, ContainerRuntime=containerd, KubernetesVersion=v1.35.1
+I0330 02:55:06.367149    3290 driver.go:422] Setting default libvirt URI to qemu:///system
+I0330 02:55:07.308316    3290 podman.go:124] podman version: 4.9.3
+I0330 02:55:07.310470    3290 out.go:179] ✨  Using the podman driver based on existing profile
+I0330 02:55:07.312517    3290 start.go:310] selected driver: podman
+I0330 02:55:07.312529    3290 start.go:935] validating driver "podman" against &{Name:minikube KeepContext:false EmbedCerts:false MinikubeISO: KicBaseImage:gcr.io/k8s-minikube/kicbase:v0.0.50@sha256:eb4fec00e8ad70adf8e6436f195cc429825ffb85f95afcdb5d8d9deb576f3e93 Memory:3072 CPUs:2 DiskSize:20000 Driver:podman HyperkitVpnKitSock: HyperkitVSockPorts:[] DockerEnv:[] ContainerVolumeMounts:[] InsecureRegistry:[] RegistryMirror:[] HostOnlyCIDR:192.168.59.1/24 HypervVirtualSwitch: HypervUseExternalSwitch:false HypervExternalAdapter: KVMNetwork:default KVMQemuURI:qemu:///system KVMGPU:false KVMHidden:false KVMNUMACount:1 APIServerPort:8443 DockerOpt:[] DisableDriverMounts:false NFSShare:[] NFSSharesRoot:/nfsshares UUID: NoVTXCheck:false DNSProxy:false HostDNSResolver:true HostOnlyNicType:virtio NatNicType:virtio SSHIPAddress: SSHUser:root SSHKey: SSHPort:22 KubernetesConfig:{KubernetesVersion:v1.35.1 ClusterName:minikube Namespace:default APIServerHAVIP: APIServerName:minikubeCA APIServerNames:[] APIServerIPs:[] DNSDomain:cluster.local ContainerRuntime:containerd CRISocket: NetworkPlugin:cni FeatureGates:KubeletInUserNamespace=true ServiceCIDR:10.96.0.0/12 ImageRepository: LoadBalancerStartIP: LoadBalancerEndIP: CustomIngressCert: RegistryAliases: ExtraOptions:[] ShouldLoadCachedImages:true EnableDefaultCNI:false CNI:} Nodes:[{Name: IP:192.168.49.2 Port:8443 KubernetesVersion:v1.35.1 ContainerRuntime:containerd ControlPlane:true Worker:true}] Addons:map[dashboard:true default-storageclass:true ingress:true metrics-server:true storage-provisioner:true] CustomAddonImages:map[] CustomAddonRegistries:map[] VerifyComponents:map[apiserver:true system_pods:true] StartHostTimeout:6m0s ScheduledStop:<nil> ExposedPorts:[] ListenAddress: Network: Subnet: MultiNodeRequested:false ExtraDisks:0 CertExpiration:26280h0m0s MountString: Mount9PVersion:9p2000.L MountGID:docker MountIP: MountMSize:262144 MountOptions:[] MountPort:0 MountType:9p MountUID:docker BinaryMirror: DisableOptimizations:false DisableMetrics:false DisableCoreDNSLog:false CustomQemuFirmwarePath: SocketVMnetClientPath: SocketVMnetPath: StaticIP: SSHAuthSock: SSHAgentPID:0 GPUs: AutoPauseInterval:1m0s Rosetta:false}
+I0330 02:55:07.312663    3290 start.go:946] status for podman: {Installed:true Healthy:true Running:false NeedsImprovement:false Error:<nil> Reason: Fix: Doc: Version:}
+I0330 02:55:07.312752    3290 cli_runner.go:164] Run: podman system info --format json
+I0330 02:55:09.067355    3290 cli_runner.go:217] Completed: podman system info --format json: (1.75456855s)
+I0330 02:55:09.067557    3290 info.go:288] podman info: {Host:{BuildahVersion:1.33.7 CgroupVersion:v2 Conmon:{Package:conmon_2.1.10+ds1-1build2_amd64 Path:/usr/bin/conmon Version:conmon version 2.1.10, commit: unknown} Distribution:{Distribution:ubuntu Version:24.04} MemFree:6827012096 MemTotal:8189603840 OCIRuntime:{Name:crun Package:crun_1.14.1-1_amd64 Path:/usr/bin/crun Version:crun version 1.14.1
+commit: de537a7965bfbe9992e2cfae0baeb56a08128171
+rundir: /run/user/1000/crun
+spec: 1.0.0
++SYSTEMD +SELINUX +APPARMOR +CAP +SECCOMP +EBPF +WASM:wasmedge +YAJL} SwapFree:2147483648 SwapTotal:2147483648 Arch:amd64 Cpus:8 Eventlogger:journald Hostname:Dell Kernel:6.6.87.2-microsoft-standard-WSL2 Os:linux Security:{Rootless:true} Uptime:0h 17m 27.00s} Registries:{Search:[]} Store:{ConfigFile:/home/santj/.config/containers/storage.conf ContainerStore:{Number:0} GraphDriverName:overlay GraphOptions:{} GraphRoot:/home/santj/.local/share/containers/storage GraphStatus:{BackingFilesystem:extfs NativeOverlayDiff:true SupportsDType:true UsingMetacopy:false} ImageStore:{Number:132} RunRoot:/run/user/1000/containers VolumePath:/home/santj/.local/share/containers/storage/volumes}}
+I0330 02:55:09.068445    3290 cni.go:83] Creating CNI manager for ""
+I0330 02:55:09.069046    3290 cni.go:142] "podman" driver + "containerd" runtime found, recommending kindnet
+I0330 02:55:09.069138    3290 start.go:358] cluster config:
+{Name:minikube KeepContext:false EmbedCerts:false MinikubeISO: KicBaseImage:gcr.io/k8s-minikube/kicbase:v0.0.50@sha256:eb4fec00e8ad70adf8e6436f195cc429825ffb85f95afcdb5d8d9deb576f3e93 Memory:3072 CPUs:2 DiskSize:20000 Driver:podman HyperkitVpnKitSock: HyperkitVSockPorts:[] DockerEnv:[] ContainerVolumeMounts:[] InsecureRegistry:[] RegistryMirror:[] HostOnlyCIDR:192.168.59.1/24 HypervVirtualSwitch: HypervUseExternalSwitch:false HypervExternalAdapter: KVMNetwork:default KVMQemuURI:qemu:///system KVMGPU:false KVMHidden:false KVMNUMACount:1 APIServerPort:8443 DockerOpt:[] DisableDriverMounts:false NFSShare:[] NFSSharesRoot:/nfsshares UUID: NoVTXCheck:false DNSProxy:false HostDNSResolver:true HostOnlyNicType:virtio NatNicType:virtio SSHIPAddress: SSHUser:root SSHKey: SSHPort:22 KubernetesConfig:{KubernetesVersion:v1.35.1 ClusterName:minikube Namespace:default APIServerHAVIP: APIServerName:minikubeCA APIServerNames:[] APIServerIPs:[] DNSDomain:cluster.local ContainerRuntime:containerd CRISocket: NetworkPlugin:cni FeatureGates:KubeletInUserNamespace=true ServiceCIDR:10.96.0.0/12 ImageRepository: LoadBalancerStartIP: LoadBalancerEndIP: CustomIngressCert: RegistryAliases: ExtraOptions:[] ShouldLoadCachedImages:true EnableDefaultCNI:false CNI:} Nodes:[{Name: IP:192.168.49.2 Port:8443 KubernetesVersion:v1.35.1 ContainerRuntime:containerd ControlPlane:true Worker:true}] Addons:map[dashboard:true default-storageclass:true ingress:true metrics-server:true storage-provisioner:true] CustomAddonImages:map[] CustomAddonRegistries:map[] VerifyComponents:map[apiserver:true system_pods:true] StartHostTimeout:6m0s ScheduledStop:<nil> ExposedPorts:[] ListenAddress: Network: Subnet: MultiNodeRequested:false ExtraDisks:0 CertExpiration:26280h0m0s MountString: Mount9PVersion:9p2000.L MountGID:docker MountIP: MountMSize:262144 MountOptions:[] MountPort:0 MountType:9p MountUID:docker BinaryMirror: DisableOptimizations:false DisableMetrics:false DisableCoreDNSLog:false CustomQemuFirmwarePath: SocketVMnetClientPath: SocketVMnetPath: StaticIP: SSHAuthSock: SSHAgentPID:0 GPUs: AutoPauseInterval:1m0s Rosetta:false}
+I0330 02:55:09.072496    3290 out.go:179] 👍  Starting "minikube" primary control-plane node in "minikube" cluster
+I0330 02:55:09.074732    3290 cache.go:135] Beginning downloading kic base image for podman with containerd
+I0330 02:55:09.077272    3290 out.go:179] 🚜  Pulling base image v0.0.50 ...
+I0330 02:55:09.079454    3290 preload.go:187] Checking if preload exists for k8s version v1.35.1 and runtime containerd
+I0330 02:55:09.079552    3290 cache.go:164] Downloading gcr.io/k8s-minikube/kicbase:v0.0.50@sha256:eb4fec00e8ad70adf8e6436f195cc429825ffb85f95afcdb5d8d9deb576f3e93 to local cache
+I0330 02:55:09.079950    3290 preload.go:202] Found local preload: /home/santj/.minikube/cache/preloaded-tarball/preloaded-images-k8s-v18-v1.35.1-containerd-overlay2-amd64.tar.lz4
+I0330 02:55:09.079957    3290 cache.go:66] Caching tarball of preloaded images
+I0330 02:55:09.080063    3290 preload.go:250] Found /home/santj/.minikube/cache/preloaded-tarball/preloaded-images-k8s-v18-v1.35.1-containerd-overlay2-amd64.tar.lz4 in cache, skipping download
+I0330 02:55:09.080071    3290 cache.go:69] Finished verifying existence of preloaded tar for v1.35.1 on containerd
+I0330 02:55:09.080144    3290 profile.go:143] Saving config to /home/santj/.minikube/profiles/minikube/config.json ...
+I0330 02:55:09.080915    3290 image.go:66] Checking for gcr.io/k8s-minikube/kicbase:v0.0.50@sha256:eb4fec00e8ad70adf8e6436f195cc429825ffb85f95afcdb5d8d9deb576f3e93 in local cache directory
+I0330 02:55:09.081597    3290 image.go:69] Found gcr.io/k8s-minikube/kicbase:v0.0.50@sha256:eb4fec00e8ad70adf8e6436f195cc429825ffb85f95afcdb5d8d9deb576f3e93 in local cache directory, skipping pull
+I0330 02:55:09.081601    3290 image.go:138] gcr.io/k8s-minikube/kicbase:v0.0.50@sha256:eb4fec00e8ad70adf8e6436f195cc429825ffb85f95afcdb5d8d9deb576f3e93 exists in cache, skipping pull
+I0330 02:55:09.081613    3290 cache.go:167] successfully saved gcr.io/k8s-minikube/kicbase:v0.0.50@sha256:eb4fec00e8ad70adf8e6436f195cc429825ffb85f95afcdb5d8d9deb576f3e93 as a tarball
+E0330 02:55:09.081643    3290 cache.go:239] Error downloading kic artifacts:  not yet implemented, see issue #8426
+I0330 02:55:09.081682    3290 cache.go:244] Successfully downloaded all kic artifacts
+I0330 02:55:09.081697    3290 start.go:359] acquireMachinesLock for minikube: {Name:mkeb970bc8e489dd9bc14daa0f618444eae08d42 Timeout:10m0s Delay:500ms}
+I0330 02:55:09.081735    3290 start.go:363] duration metric: took 27.875µs to acquireMachinesLock for "minikube"
+I0330 02:55:09.081743    3290 start.go:95] Skipping create...Using existing machine configuration
+I0330 02:55:09.081746    3290 fix.go:53] fixHost starting: 
+I0330 02:55:09.081917    3290 cli_runner.go:164] Run: podman container inspect minikube --format={{.State.Status}}
+W0330 02:55:09.608078    3290 cli_runner.go:211] podman container inspect minikube --format={{.State.Status}} returned with exit code 125
+I0330 02:55:09.608109    3290 fix.go:111] recreateIfNeeded on minikube: state= err=unknown state "minikube": podman container inspect minikube --format={{.State.Status}}: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+I0330 02:55:09.608119    3290 fix.go:116] machineExists: true. err=unknown state "minikube": podman container inspect minikube --format={{.State.Status}}: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+W0330 02:55:09.608122    3290 fix.go:137] unexpected machine state, will restart: unknown state "minikube": podman container inspect minikube --format={{.State.Status}}: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+I0330 02:55:09.612528    3290 out.go:252] 🔄  Restarting existing podman container for "minikube" ...
+I0330 02:55:09.612690    3290 cli_runner.go:164] Run: podman start minikube
+W0330 02:55:10.160261    3290 cli_runner.go:211] podman start minikube returned with exit code 125
+I0330 02:55:10.160326    3290 cli_runner.go:164] Run: podman inspect minikube
+I0330 02:55:11.894675    3290 errors.go:84] Postmortem inspect ("podman inspect minikube"): -- stdout --
+[
+     {
+          "Name": "minikube",
+          "Driver": "local",
+          "Mountpoint": "/home/santj/.local/share/containers/storage/volumes/minikube/_data",
+          "CreatedAt": "2026-03-20T11:41:10.537944916Z",
+          "Labels": {
+               "created_by.minikube.sigs.k8s.io": "true",
+               "name.minikube.sigs.k8s.io": "minikube"
+          },
+          "Scope": "local",
+          "Options": {},
+          "MountCount": 0,
+          "LockNumber": 0
+     }
+]
+
+-- /stdout --
+I0330 02:55:11.894748    3290 cli_runner.go:164] Run: podman logs --timestamps minikube
+W0330 02:55:12.452449    3290 cli_runner.go:211] podman logs --timestamps minikube returned with exit code 125
+W0330 02:55:12.452470    3290 errors.go:89] Failed to get postmortem logs. podman logs --timestamps minikube :podman logs --timestamps minikube: exit status 125
+stdout:
+
+stderr:
+Error: no container with name or ID "minikube" found: no such container
+I0330 02:55:12.452548    3290 cli_runner.go:164] Run: podman system info --format json
+I0330 02:55:13.885321    3290 cli_runner.go:217] Completed: podman system info --format json: (1.4327438s)
+I0330 02:55:13.885429    3290 info.go:288] podman info: {Host:{BuildahVersion:1.33.7 CgroupVersion:v2 Conmon:{Package:conmon_2.1.10+ds1-1build2_amd64 Path:/usr/bin/conmon Version:conmon version 2.1.10, commit: unknown} Distribution:{Distribution:ubuntu Version:24.04} MemFree:6818050048 MemTotal:8189603840 OCIRuntime:{Name:crun Package:crun_1.14.1-1_amd64 Path:/usr/bin/crun Version:crun version 1.14.1
+commit: de537a7965bfbe9992e2cfae0baeb56a08128171
+rundir: /run/user/1000/crun
+spec: 1.0.0
++SYSTEMD +SELINUX +APPARMOR +CAP +SECCOMP +EBPF +WASM:wasmedge +YAJL} SwapFree:2147483648 SwapTotal:2147483648 Arch:amd64 Cpus:8 Eventlogger:journald Hostname:Dell Kernel:6.6.87.2-microsoft-standard-WSL2 Os:linux Security:{Rootless:true} Uptime:0h 18m 31.00s} Registries:{Search:[]} Store:{ConfigFile:/home/santj/.config/containers/storage.conf ContainerStore:{Number:0} GraphDriverName:overlay GraphOptions:{} GraphRoot:/home/santj/.local/share/containers/storage GraphStatus:{BackingFilesystem:extfs NativeOverlayDiff:true SupportsDType:true UsingMetacopy:false} ImageStore:{Number:132} RunRoot:/run/user/1000/containers VolumePath:/home/santj/.local/share/containers/storage/volumes}}
+I0330 02:55:13.885446    3290 errors.go:106] postmortem podman info: {Host:{BuildahVersion:1.33.7 CgroupVersion:v2 Conmon:{Package:conmon_2.1.10+ds1-1build2_amd64 Path:/usr/bin/conmon Version:conmon version 2.1.10, commit: unknown} Distribution:{Distribution:ubuntu Version:24.04} MemFree:6818050048 MemTotal:8189603840 OCIRuntime:{Name:crun Package:crun_1.14.1-1_amd64 Path:/usr/bin/crun Version:crun version 1.14.1
+commit: de537a7965bfbe9992e2cfae0baeb56a08128171
+rundir: /run/user/1000/crun
+spec: 1.0.0
++SYSTEMD +SELINUX +APPARMOR +CAP +SECCOMP +EBPF +WASM:wasmedge +YAJL} SwapFree:2147483648 SwapTotal:2147483648 Arch:amd64 Cpus:8 Eventlogger:journald Hostname:Dell Kernel:6.6.87.2-microsoft-standard-WSL2 Os:linux Security:{Rootless:true} Uptime:0h 18m 31.00s} Registries:{Search:[]} Store:{ConfigFile:/home/santj/.config/containers/storage.conf ContainerStore:{Number:0} GraphDriverName:overlay GraphOptions:{} GraphRoot:/home/santj/.local/share/containers/storage GraphStatus:{BackingFilesystem:extfs NativeOverlayDiff:true SupportsDType:true UsingMetacopy:false} ImageStore:{Number:132} RunRoot:/run/user/1000/containers VolumePath:/home/santj/.local/share/containers/storage/volumes}}
+I0330 02:55:13.885496    3290 network_create.go:285] running [podman network inspect minikube] to gather additional debugging logs...
+I0330 02:55:13.885506    3290 cli_runner.go:164] Run: podman network inspect minikube
+I0330 02:55:14.665074    3290 network_create.go:290] output of [podman network inspect minikube]: -- stdout --
+[
+     {
+          "name": "minikube",
+          "id": "ebd97412003457057ac8de8e9d5521b44a3274de2c472952c934bc89acbec1e4",
+          "driver": "bridge",
+          "network_interface": "podman1",
+          "created": "2026-03-20T11:41:09.156790925Z",
+          "subnets": [
+               {
+                    "subnet": "192.168.49.0/24",
+                    "gateway": "192.168.49.1"
+               }
+          ],
+          "ipv6_enabled": false,
+          "internal": false,
+          "dns_enabled": true,
+          "labels": {
+               "created_by.minikube.sigs.k8s.io": "true",
+               "name.minikube.sigs.k8s.io": "minikube"
+          },
+          "ipam_options": {
+               "driver": "host-local"
+          }
+     }
+]
+
+-- /stdout --
+I0330 02:55:14.665162    3290 cli_runner.go:164] Run: podman system info --format json
+I0330 02:55:16.073525    3290 cli_runner.go:217] Completed: podman system info --format json: (1.408336822s)
+I0330 02:55:16.073632    3290 info.go:288] podman info: {Host:{BuildahVersion:1.33.7 CgroupVersion:v2 Conmon:{Package:conmon_2.1.10+ds1-1build2_amd64 Path:/usr/bin/conmon Version:conmon version 2.1.10, commit: unknown} Distribution:{Distribution:ubuntu Version:24.04} MemFree:6809780224 MemTotal:8189603840 OCIRuntime:{Name:crun Package:crun_1.14.1-1_amd64 Path:/usr/bin/crun Version:crun version 1.14.1
+commit: de537a7965bfbe9992e2cfae0baeb56a08128171
+rundir: /run/user/1000/crun
+spec: 1.0.0
++SYSTEMD +SELINUX +APPARMOR +CAP +SECCOMP +EBPF +WASM:wasmedge +YAJL} SwapFree:2147483648 SwapTotal:2147483648 Arch:amd64 Cpus:8 Eventlogger:journald Hostname:Dell Kernel:6.6.87.2-microsoft-standard-WSL2 Os:linux Security:{Rootless:true} Uptime:0h 18m 33.00s} Registries:{Search:[]} Store:{ConfigFile:/home/santj/.config/containers/storage.conf ContainerStore:{Number:0} GraphDriverName:overlay GraphOptions:{} GraphRoot:/home/santj/.local/share/containers/storage GraphStatus:{BackingFilesystem:extfs NativeOverlayDiff:true SupportsDType:true UsingMetacopy:false} ImageStore:{Number:132} RunRoot:/run/user/1000/containers VolumePath:/home/santj/.local/share/containers/storage/volumes}}
+I0330 02:55:16.076001    3290 ssh_runner.go:194] Run: sh -c "df -h /var | awk 'NR==2{print $5}'"
+I0330 02:55:16.076065    3290 cli_runner.go:164] Run: podman version --format {{.Version}}
+I0330 02:55:16.593477    3290 cli_runner.go:164] Run: podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube
+W0330 02:55:17.305087    3290 cli_runner.go:211] podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube returned with exit code 125
+I0330 02:55:17.305248    3290 retry.go:85] will retry after 200ms: new client: new client: Error creating new ssh host from driver: Error getting ssh port for driver: get ssh host-port: get port 22 for "minikube": podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+I0330 02:55:17.506724    3290 cli_runner.go:164] Run: podman version --format {{.Version}}
+I0330 02:55:18.034897    3290 cli_runner.go:164] Run: podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube
+W0330 02:55:18.581462    3290 cli_runner.go:211] podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube returned with exit code 125
+W0330 02:55:18.581527    3290 start.go:267] error running df -h /var: NewSession: new client: new client: Error creating new ssh host from driver: Error getting ssh port for driver: get ssh host-port: get port 22 for "minikube": podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+
+W0330 02:55:18.581533    3290 start.go:234] error getting percentage of /var that is free: NewSession: new client: new client: Error creating new ssh host from driver: Error getting ssh port for driver: get ssh host-port: get port 22 for "minikube": podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+I0330 02:55:18.581578    3290 ssh_runner.go:194] Run: sh -c "df -BG /var | awk 'NR==2{print $4}'"
+I0330 02:55:18.581602    3290 cli_runner.go:164] Run: podman version --format {{.Version}}
+I0330 02:55:19.136836    3290 cli_runner.go:164] Run: podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube
+W0330 02:55:19.760901    3290 cli_runner.go:211] podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube returned with exit code 125
+I0330 02:55:20.119335    3290 cli_runner.go:164] Run: podman version --format {{.Version}}
+I0330 02:55:20.824170    3290 cli_runner.go:164] Run: podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube
+W0330 02:55:21.521335    3290 cli_runner.go:211] podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube returned with exit code 125
+W0330 02:55:21.521375    3290 start.go:282] error running df -BG /var: NewSession: new client: new client: Error creating new ssh host from driver: Error getting ssh port for driver: get ssh host-port: get port 22 for "minikube": podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+
+W0330 02:55:21.521382    3290 start.go:239] error getting GiB of /var that is available: NewSession: new client: new client: Error creating new ssh host from driver: Error getting ssh port for driver: get ssh host-port: get port 22 for "minikube": podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+I0330 02:55:21.521394    3290 fix.go:55] duration metric: took 11.282221174s for fixHost
+I0330 02:55:21.521398    3290 start.go:82] releasing machines lock for "minikube", held for 11.282239924s
+W0330 02:55:21.521412    3290 start.go:726] error starting host: driver start: start: podman start minikube: exit status 125
+stdout:
+
+stderr:
+Error: no container with name or ID "minikube" found: no such container
+W0330 02:55:21.521471    3290 out.go:285] 🤦  StartHost failed, but will try again: driver start: start: podman start minikube: exit status 125
+stdout:
+
+stderr:
+Error: no container with name or ID "minikube" found: no such container
+
+I0330 02:55:21.521547    3290 start.go:742] Will try again in 5 seconds ...
+I0330 02:55:26.523900    3290 start.go:359] acquireMachinesLock for minikube: {Name:mkeb970bc8e489dd9bc14daa0f618444eae08d42 Timeout:10m0s Delay:500ms}
+I0330 02:55:26.524047    3290 start.go:363] duration metric: took 118.564µs to acquireMachinesLock for "minikube"
+I0330 02:55:26.524067    3290 start.go:95] Skipping create...Using existing machine configuration
+I0330 02:55:26.524073    3290 fix.go:53] fixHost starting: 
+I0330 02:55:26.524437    3290 cli_runner.go:164] Run: podman container inspect minikube --format={{.State.Status}}
+W0330 02:55:27.393528    3290 cli_runner.go:211] podman container inspect minikube --format={{.State.Status}} returned with exit code 125
+I0330 02:55:27.393573    3290 fix.go:111] recreateIfNeeded on minikube: state= err=unknown state "minikube": podman container inspect minikube --format={{.State.Status}}: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+I0330 02:55:27.393584    3290 fix.go:116] machineExists: true. err=unknown state "minikube": podman container inspect minikube --format={{.State.Status}}: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+W0330 02:55:27.393589    3290 fix.go:137] unexpected machine state, will restart: unknown state "minikube": podman container inspect minikube --format={{.State.Status}}: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+I0330 02:55:27.416197    3290 out.go:252] 🔄  Restarting existing podman container for "minikube" ...
+I0330 02:55:27.416382    3290 cli_runner.go:164] Run: podman start minikube
+W0330 02:55:28.325089    3290 cli_runner.go:211] podman start minikube returned with exit code 125
+I0330 02:55:28.325154    3290 cli_runner.go:164] Run: podman inspect minikube
+I0330 02:55:29.070850    3290 errors.go:84] Postmortem inspect ("podman inspect minikube"): -- stdout --
+[
+     {
+          "Name": "minikube",
+          "Driver": "local",
+          "Mountpoint": "/home/santj/.local/share/containers/storage/volumes/minikube/_data",
+          "CreatedAt": "2026-03-20T11:41:10.537944916Z",
+          "Labels": {
+               "created_by.minikube.sigs.k8s.io": "true",
+               "name.minikube.sigs.k8s.io": "minikube"
+          },
+          "Scope": "local",
+          "Options": {},
+          "MountCount": 0,
+          "LockNumber": 0
+     }
+]
+
+-- /stdout --
+I0330 02:55:29.070903    3290 cli_runner.go:164] Run: podman logs --timestamps minikube
+W0330 02:55:29.637189    3290 cli_runner.go:211] podman logs --timestamps minikube returned with exit code 125
+W0330 02:55:29.637213    3290 errors.go:89] Failed to get postmortem logs. podman logs --timestamps minikube :podman logs --timestamps minikube: exit status 125
+stdout:
+
+stderr:
+Error: no container with name or ID "minikube" found: no such container
+I0330 02:55:29.637280    3290 cli_runner.go:164] Run: podman system info --format json
+I0330 02:55:30.901886    3290 cli_runner.go:217] Completed: podman system info --format json: (1.264576338s)
+I0330 02:55:30.902002    3290 info.go:288] podman info: {Host:{BuildahVersion:1.33.7 CgroupVersion:v2 Conmon:{Package:conmon_2.1.10+ds1-1build2_amd64 Path:/usr/bin/conmon Version:conmon version 2.1.10, commit: unknown} Distribution:{Distribution:ubuntu Version:24.04} MemFree:6812311552 MemTotal:8189603840 OCIRuntime:{Name:crun Package:crun_1.14.1-1_amd64 Path:/usr/bin/crun Version:crun version 1.14.1
+commit: de537a7965bfbe9992e2cfae0baeb56a08128171
+rundir: /run/user/1000/crun
+spec: 1.0.0
++SYSTEMD +SELINUX +APPARMOR +CAP +SECCOMP +EBPF +WASM:wasmedge +YAJL} SwapFree:2147483648 SwapTotal:2147483648 Arch:amd64 Cpus:8 Eventlogger:journald Hostname:Dell Kernel:6.6.87.2-microsoft-standard-WSL2 Os:linux Security:{Rootless:true} Uptime:0h 18m 48.00s} Registries:{Search:[]} Store:{ConfigFile:/home/santj/.config/containers/storage.conf ContainerStore:{Number:0} GraphDriverName:overlay GraphOptions:{} GraphRoot:/home/santj/.local/share/containers/storage GraphStatus:{BackingFilesystem:extfs NativeOverlayDiff:true SupportsDType:true UsingMetacopy:false} ImageStore:{Number:132} RunRoot:/run/user/1000/containers VolumePath:/home/santj/.local/share/containers/storage/volumes}}
+I0330 02:55:30.902020    3290 errors.go:106] postmortem podman info: {Host:{BuildahVersion:1.33.7 CgroupVersion:v2 Conmon:{Package:conmon_2.1.10+ds1-1build2_amd64 Path:/usr/bin/conmon Version:conmon version 2.1.10, commit: unknown} Distribution:{Distribution:ubuntu Version:24.04} MemFree:6812311552 MemTotal:8189603840 OCIRuntime:{Name:crun Package:crun_1.14.1-1_amd64 Path:/usr/bin/crun Version:crun version 1.14.1
+commit: de537a7965bfbe9992e2cfae0baeb56a08128171
+rundir: /run/user/1000/crun
+spec: 1.0.0
++SYSTEMD +SELINUX +APPARMOR +CAP +SECCOMP +EBPF +WASM:wasmedge +YAJL} SwapFree:2147483648 SwapTotal:2147483648 Arch:amd64 Cpus:8 Eventlogger:journald Hostname:Dell Kernel:6.6.87.2-microsoft-standard-WSL2 Os:linux Security:{Rootless:true} Uptime:0h 18m 48.00s} Registries:{Search:[]} Store:{ConfigFile:/home/santj/.config/containers/storage.conf ContainerStore:{Number:0} GraphDriverName:overlay GraphOptions:{} GraphRoot:/home/santj/.local/share/containers/storage GraphStatus:{BackingFilesystem:extfs NativeOverlayDiff:true SupportsDType:true UsingMetacopy:false} ImageStore:{Number:132} RunRoot:/run/user/1000/containers VolumePath:/home/santj/.local/share/containers/storage/volumes}}
+I0330 02:55:30.902064    3290 network_create.go:285] running [podman network inspect minikube] to gather additional debugging logs...
+I0330 02:55:30.902073    3290 cli_runner.go:164] Run: podman network inspect minikube
+I0330 02:55:31.740856    3290 network_create.go:290] output of [podman network inspect minikube]: -- stdout --
+[
+     {
+          "name": "minikube",
+          "id": "ebd97412003457057ac8de8e9d5521b44a3274de2c472952c934bc89acbec1e4",
+          "driver": "bridge",
+          "network_interface": "podman1",
+          "created": "2026-03-20T11:41:09.156790925Z",
+          "subnets": [
+               {
+                    "subnet": "192.168.49.0/24",
+                    "gateway": "192.168.49.1"
+               }
+          ],
+          "ipv6_enabled": false,
+          "internal": false,
+          "dns_enabled": true,
+          "labels": {
+               "created_by.minikube.sigs.k8s.io": "true",
+               "name.minikube.sigs.k8s.io": "minikube"
+          },
+          "ipam_options": {
+               "driver": "host-local"
+          }
+     }
+]
+
+-- /stdout --
+I0330 02:55:31.740932    3290 cli_runner.go:164] Run: podman system info --format json
+I0330 02:55:33.431071    3290 cli_runner.go:217] Completed: podman system info --format json: (1.690078043s)
+I0330 02:55:33.431321    3290 info.go:288] podman info: {Host:{BuildahVersion:1.33.7 CgroupVersion:v2 Conmon:{Package:conmon_2.1.10+ds1-1build2_amd64 Path:/usr/bin/conmon Version:conmon version 2.1.10, commit: unknown} Distribution:{Distribution:ubuntu Version:24.04} MemFree:6807703552 MemTotal:8189603840 OCIRuntime:{Name:crun Package:crun_1.14.1-1_amd64 Path:/usr/bin/crun Version:crun version 1.14.1
+commit: de537a7965bfbe9992e2cfae0baeb56a08128171
+rundir: /run/user/1000/crun
+spec: 1.0.0
++SYSTEMD +SELINUX +APPARMOR +CAP +SECCOMP +EBPF +WASM:wasmedge +YAJL} SwapFree:2147483648 SwapTotal:2147483648 Arch:amd64 Cpus:8 Eventlogger:journald Hostname:Dell Kernel:6.6.87.2-microsoft-standard-WSL2 Os:linux Security:{Rootless:true} Uptime:0h 18m 50.00s} Registries:{Search:[]} Store:{ConfigFile:/home/santj/.config/containers/storage.conf ContainerStore:{Number:0} GraphDriverName:overlay GraphOptions:{} GraphRoot:/home/santj/.local/share/containers/storage GraphStatus:{BackingFilesystem:extfs NativeOverlayDiff:true SupportsDType:true UsingMetacopy:false} ImageStore:{Number:132} RunRoot:/run/user/1000/containers VolumePath:/home/santj/.local/share/containers/storage/volumes}}
+I0330 02:55:33.431443    3290 ssh_runner.go:194] Run: sh -c "df -h /var | awk 'NR==2{print $5}'"
+I0330 02:55:33.431466    3290 cli_runner.go:164] Run: podman version --format {{.Version}}
+I0330 02:55:34.136067    3290 cli_runner.go:164] Run: podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube
+W0330 02:55:34.714195    3290 cli_runner.go:211] podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube returned with exit code 125
+I0330 02:55:34.714237    3290 retry.go:85] will retry after 200ms: new client: new client: Error creating new ssh host from driver: Error getting ssh port for driver: get ssh host-port: get port 22 for "minikube": podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+I0330 02:55:34.964675    3290 cli_runner.go:164] Run: podman version --format {{.Version}}
+I0330 02:55:35.589355    3290 cli_runner.go:164] Run: podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube
+W0330 02:55:36.125390    3290 cli_runner.go:211] podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube returned with exit code 125
+W0330 02:55:36.125427    3290 start.go:267] error running df -h /var: NewSession: new client: new client: Error creating new ssh host from driver: Error getting ssh port for driver: get ssh host-port: get port 22 for "minikube": podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+
+W0330 02:55:36.125431    3290 start.go:234] error getting percentage of /var that is free: NewSession: new client: new client: Error creating new ssh host from driver: Error getting ssh port for driver: get ssh host-port: get port 22 for "minikube": podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+I0330 02:55:36.125468    3290 ssh_runner.go:194] Run: sh -c "df -BG /var | awk 'NR==2{print $4}'"
+I0330 02:55:36.125494    3290 cli_runner.go:164] Run: podman version --format {{.Version}}
+I0330 02:55:36.647392    3290 cli_runner.go:164] Run: podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube
+W0330 02:55:37.185378    3290 cli_runner.go:211] podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube returned with exit code 125
+I0330 02:55:37.373769    3290 cli_runner.go:164] Run: podman version --format {{.Version}}
+I0330 02:55:37.995584    3290 cli_runner.go:164] Run: podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube
+W0330 02:55:38.544377    3290 cli_runner.go:211] podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube returned with exit code 125
+W0330 02:55:38.544438    3290 start.go:282] error running df -BG /var: NewSession: new client: new client: Error creating new ssh host from driver: Error getting ssh port for driver: get ssh host-port: get port 22 for "minikube": podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+
+W0330 02:55:38.544459    3290 start.go:239] error getting GiB of /var that is available: NewSession: new client: new client: Error creating new ssh host from driver: Error getting ssh port for driver: get ssh host-port: get port 22 for "minikube": podman container inspect -f "'{{(index (index .NetworkSettings.Ports "22/tcp") 0).HostPort}}'" minikube: exit status 125
+stdout:
+
+stderr:
+Error: no such container minikube
+I0330 02:55:38.544465    3290 fix.go:55] duration metric: took 12.020393412s for fixHost
+I0330 02:55:38.544471    3290 start.go:82] releasing machines lock for "minikube", held for 12.020416622s
+W0330 02:55:38.544558    3290 out.go:285] 😿  Failed to start podman container. Running "minikube delete" may fix it: driver start: start: podman start minikube: exit status 125
+stdout:
+
+stderr:
+Error: no container with name or ID "minikube" found: no such container
+
+I0330 02:55:38.548520    3290 out.go:203] 
+W0330 02:55:38.550607    3290 out.go:285] ❌  Exiting due to GUEST_PROVISION: error provisioning guest: Failed to start host: driver start: start: podman start minikube: exit status 125
+stdout:
+
+stderr:
+Error: no container with name or ID "minikube" found: no such container
+
+W0330 02:55:38.550674    3290 out.go:285] 
+W0330 02:55:38.550995    3290 out.go:308] [31m╭───────────────────────────────────────────────────────────────────────────────────────────╮[0m
+[31m│[0m                                                                                           [31m│[0m
+[31m│[0m    😿  If the above advice does not help, please let us know:                             [31m│[0m
+[31m│[0m    👉  https://github.com/kubernetes/minikube/issues/new/choose                           [31m│[0m
+[31m│[0m                                                                                           [31m│[0m
+[31m│[0m    Please run `minikube logs --file=logs.txt` and attach logs.txt to the GitHub issue.    [31m│[0m
+[31m│[0m                                                                                           [31m│[0m
+[31m╰───────────────────────────────────────────────────────────────────────────────────────────╯[0m
+I0330 02:55:38.552977    3290 out.go:203] 
+
+
