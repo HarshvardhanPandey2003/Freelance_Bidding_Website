@@ -24,8 +24,8 @@ jobs:
       - name: Build and Patch Images (Podman)
         run: |
           # Force the explicit docker.io/ prefix to stop Podman from adding localhost/
-          podman build --no-cache -t docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }} ./backend
-          podman build --no-cache -t docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }} ./frontend
+          podman build -t docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }} ./backend
+          podman build -t docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }} ./frontend
           
           echo "Saving images to physical tar archives..."
           podman save -o backend.tar docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}
