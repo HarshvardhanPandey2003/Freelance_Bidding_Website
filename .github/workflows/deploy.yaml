@@ -19,7 +19,7 @@ jobs:
 
       - name: Ensure Namespace Exists
         run: |
-          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f - --validate=false
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Build and Patch Images (Podman)
         run: |
