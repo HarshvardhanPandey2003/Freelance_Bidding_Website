@@ -6,7 +6,7 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 const sdk = new NodeSDK({
   traceExporter: new OTLPTraceExporter({
     // Using the internal K8s DNS name for your collector
-    url: 'grpc://otel-collector-opentelemetry-collector:4317', 
+    url: 'http://otel-collector-opentelemetry-collector:4317', 
   }),
   instrumentations: [getNodeAutoInstrumentations()],
   serviceName: 'freelance-backend',
