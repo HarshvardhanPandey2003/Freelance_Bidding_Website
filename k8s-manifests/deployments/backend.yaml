@@ -15,8 +15,6 @@ spec:
     metadata:
       labels:
         app: backend
-      annotations:
-        instrumentation.opentelemetry.io/inject-nodejs: "true"
     spec:
       containers:
       - name: backend
@@ -62,6 +60,8 @@ spec:
             secretKeyRef:
               name: backend-secrets-k8s
               key: RAZORPAY_KEY_SECRET
+        - name: OTEL_LOG_LEVEL
+          value: "debug"
 ---
 apiVersion: v1
 kind: Service
