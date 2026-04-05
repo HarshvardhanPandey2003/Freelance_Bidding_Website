@@ -12,37 +12,40 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Build and Stream Images to Minikube
+      - name: Connect to Local Registry
         run: |
-          echo "Building images natively on the WSL host..."
-          podman build -t docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }} ./backend
-          podman build -t docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }} ./frontend
+          echo "Port-forwarding Minikube registry to host..."
+          # Run port-forward in the background so the pipeline can continue
+          kubectl port-forward --namespace kube-system service/registry 5000:80 &
+          # Give it a few seconds to establish the connection
+          sleep 5
+
+      - name: Build and Push to Local Registry
+        run: |
+          echo "Building images natively on WSL..."
+          # Note the tag changed from docker.io to localhost:5000
+          podman build -t localhost:5000/freelance-backend:${{ github.run_id }} ./backend
+          podman build -t localhost:5000/freelance-frontend:${{ github.run_id }} ./frontend
           
-          echo "Streaming images directly into Minikube's containerd engine..."
-          # This pipes the image archive over SSH directly into the cluster
-          # No .tar files are ever written to your local SSD!
-          podman save docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }} | minikube ssh -- sudo ctr -n k8s.io images import -
-          podman save docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }} | minikube ssh -- sudo ctr -n k8s.io images import -
-      - name: Sideload Images to Minikube
-        timeout-minutes: 3
-        run: |
-          echo "Loading physical tar archives directly into Minikube..."
-          minikube image load backend.tar
-          minikube image load frontend.tar
+          echo "Pushing images directly into Minikube's internal registry..."
+          # --tls-verify=false is required because localhost doesn't have an SSL cert
+          podman push --tls-verify=false localhost:5000/freelance-backend:${{ github.run_id }}
+          podman push --tls-verify=false localhost:5000/freelance-frontend:${{ github.run_id }}
 
       - name: Update GitOps Repository
         env:
           GITOPS_PAT: ${{ secrets.GITOPS_PAT }}
         run: |
           echo "Cloning GitOps repository..."
-          # Clone the repo using the PAT for authentication
           git clone https://x-access-token:${GITOPS_PAT}@github.com/HarshvardhanPandey2003/freelance-bidding-gitops.git
           cd freelance-bidding-gitops
           
-          echo "Injecting new image tags into GitOps manifests..."
-          # The regex 'image: .*freelance-backend:.*' ensures it always finds the line and replaces the whole thing
-          sed -i -E "s|image: .*freelance-backend:.*|image: docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}|g" apps/backend/backend-manifests.yaml
-          sed -i -E "s|image: .*freelance-frontend:.*|image: docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}|g" apps/frontend/frontend-manifests.yaml
+          echo "Injecting local registry tags into GitOps manifests..."
+          # Update Backend to point to localhost:5000
+          sed -i -E "s|image: .*freelance-backend:.*|image: localhost:5000/freelance-backend:${{ github.run_id }}|g" apps/backend/backend-manifests.yaml
+          
+          # Update Frontend to point to localhost:5000
+          sed -i -E "s|image: .*freelance-frontend:.*|image: localhost:5000/freelance-frontend:${{ github.run_id }}|g" apps/frontend/frontend-manifests.yaml
           
           echo "Committing and pushing changes..."
           git config user.name "github-actions[bot]"
@@ -54,6 +57,8 @@ jobs:
       - name: Post-Build Cleanup
         if: always()
         run: |
-          echo "Cleaning up dangling images inside Minikube to save disk space..."
-          # This clears out the old, replaced images inside the cluster
-          minikube ssh -- docker image prune -f || true
+          echo "Cleaning up local build cache..."
+          podman image prune -f || true
+          
+          echo "Killing port-forward process..."
+          pkill -f "kubectl port-forward" || true
