@@ -19,7 +19,7 @@ spec:
       containers:
       - name: backend
         image: harshvardhan2003/freelance-backend:latest
-        imagePullPolicy: Never
+        imagePullPolicy: Always
         resources:
           requests:
             cpu: "100m"

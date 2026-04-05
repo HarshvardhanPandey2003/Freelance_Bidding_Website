@@ -18,7 +18,7 @@ spec:
       containers:
       - name: frontend
         image: harshvardhan2003/freelance-frontend:latest
-        imagePullPolicy: Never 
+        imagePullPolicy: Always 
         resources:
           requests:
             cpu: "50m"
