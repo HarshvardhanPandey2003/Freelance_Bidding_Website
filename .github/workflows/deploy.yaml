@@ -15,8 +15,10 @@ jobs:
       - name: Build and Patch Images (Podman)
         run: |
           echo "Building images with tag: ${{ github.run_id }}"
-          podman build -t docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }} ./backend
-          podman build -t docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }} ./frontend
+          echo "Saving images to physical tar archives (Docker format)..."
+          # FORCE the Docker format so Minikube doesn't choke on OCI formats
+          podman save --format docker-archive -o backend.tar docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}
+          podman save --format docker-archive -o frontend.tar docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}
           
           echo "Saving images to physical tar archives..."
           podman save -o backend.tar docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}
@@ -41,7 +43,6 @@ jobs:
           echo "Injecting new image tags into GitOps manifests..."
           # The regex 'image: .*freelance-backend:.*' ensures it always finds the line and replaces the whole thing
           sed -i -E "s|image: .*freelance-backend:.*|image: docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}|g" apps/backend/backend-manifests.yaml
-          
           sed -i -E "s|image: .*freelance-frontend:.*|image: docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}|g" apps/frontend/frontend-manifests.yaml
           
           echo "Committing and pushing changes..."
