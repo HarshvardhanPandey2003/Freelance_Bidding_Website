@@ -2,7 +2,7 @@ name: Local DevOps Lifecycle (WSL)
 
 on:
   push:
-    branches: [ minikube ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
