@@ -1,8 +1,8 @@
-# k8s-manifests/deployments/backend.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
+  namespace: freelance-hub  # Explicitly set the namespace
   labels:
     app: backend
 spec:
@@ -16,24 +16,17 @@ spec:
       labels:
         app: backend
     spec:
-      serviceAccountName: workload-identity-sa
-      volumes:
-      - name: secrets-store
-        csi:
-          driver: secrets-store.csi.k8s.io
-          readOnly: true  
-          volumeAttributes:
-            secretProviderClass: "app-secrets-provider"
       containers:
       - name: backend
-        image: harshvardhan2003/freelance-backend:ee1eb10f1e630d4862c266c011e10a07ece26e91
+        image: harshvardhan2003/freelance-backend:latest
+        imagePullPolicy: Never
         resources:
           requests:
-            cpu: "100m"      # Reduced from 500m
-            memory: "256Mi"   # Reduced from 512Mi
+            cpu: "100m"
+            memory: "256Mi"
           limits:
-            cpu: "500m"       # Reduced from 1000m
-            memory: "512Mi"   # Reduced from 1Gi
+            cpu: "500m"
+            memory: "512Mi"
         ports:
         - containerPort: 5000
         envFrom:
@@ -67,15 +60,14 @@ spec:
             secretKeyRef:
               name: backend-secrets-k8s
               key: RAZORPAY_KEY_SECRET
-        volumeMounts:
-        - name: secrets-store
-          mountPath: "/mnt/secrets-store"    # CHANGED: Standard path
-          readOnly: true
+        - name: OTEL_LOG_LEVEL
+          value: "debug"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: backend-service
+  namespace: freelance-hub
 spec:
   selector:
     app: backend

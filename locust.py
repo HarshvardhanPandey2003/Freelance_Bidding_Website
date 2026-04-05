@@ -115,22 +115,29 @@ class FreelanceHubUser(FastHttpUser):
         except Exception as e:
             print(f"Auth/me exception: {e}")
 
-    @task(10)  # High weight - this should always work
-    def health_check(self):
-        """Health check - check if server is running"""
-        try:
-            response = self.client.get(
-                "/api/health", 
-                timeout=5,
-                name="GET /api/health"
-            )
+    @task(10)
+    def debug_health_check(self):
+        """Debug route to find exactly why it's failing"""
+        with self.client.get("/api/health", timeout=5, name="DEBUG /api/health", catch_response=True) as response:
+            print(f"\n--- DEBUG INFO ---")
+            print(f"Actual URL Hit: {response.url}")
+            print(f"Status Code: {response.status_code}")
+            print(f"Response Body: {response.text}")
+            print(f"------------------\n")
+            
             if response.status_code == 200:
-                print(f"Health check OK")
-            else:
-                print(f"Health check failed: {response.status_code}")
+                response.success()
+            elif response.status_code == 0:
+                response.failure("Connection completely refused. Is the Minikube tunnel still open?")
+            elif response.status_code == 404:
+                response.failure("404 Not Found. The pod received it, but the route doesn't exist.")
                 
-        except Exception as e:
-            print(f"Health check exception: {e}")
+                # Let's dynamically test if it's a path rewrite issue!
+                print("Attempting alternative route without '/api' prefix...")
+                alt_response = self.client.get("/health")
+                print(f"Alt Status Code (/health): {alt_response.status_code}")
+            else:
+                response.failure(f"Failed with status: {response.status_code}")
 
     @task(3)
     def test_without_auth(self):
@@ -147,25 +154,3 @@ class FreelanceHubUser(FastHttpUser):
         except Exception as e:
             print(f"No-auth test exception: {e}")
 
-# from locust import HttpUser, task, between
-
-# class SimpleTest(HttpUser):
-#     wait_time = between(1, 3)
-    
-#     @task(5)
-#     def test_login_only(self):
-#         """Just test login to generate load"""
-#         self.client.post("/api/auth/login", json={
-#             "email": "free@gmail.com",
-#             "password": "test@123"
-#         }, name="POST /api/auth/login")
-    
-#     @task(3)
-#     def test_health(self):
-#         """Test health endpoint"""
-#         self.client.get("/api/health", name="GET /api/health")
-    
-#     @task(2)
-#     def test_projects_no_auth(self):
-#         """Test projects without auth"""
-#         self.client.get("/api/projects/open", name="GET /api/projects/open")

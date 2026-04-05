@@ -51,7 +51,7 @@ export const initializeSocket = (io) => {
 
     // BID-RELATED SOCKET HANDLERS
     // Join project room with authorization
-    socket.on('joinProject', async (projectId) => {
+    socket?.on('joinProject', async (projectId) => {
       try {
         if (!projectId || !mongoose.Types.ObjectId.isValid(projectId)) {
           socket.emit('error', { message: 'Invalid project ID format' });
@@ -84,7 +84,7 @@ export const initializeSocket = (io) => {
     });
 
     // Leave project room
-    socket.on('leaveProject', (projectId) => {
+    socket?.on('leaveProject', (projectId) => {
        // 1. Validate projectId format
       if (!projectId || !mongoose.Types.ObjectId.isValid(projectId)) {
         socket.emit('error', { message: 'Invalid project ID format' });
@@ -107,7 +107,7 @@ export const initializeSocket = (io) => {
     // So what this does is when you close the application
     // socket.currentProject still exists in server memory. Socket might still be "joined" to the room
     // that is why we call this when the user disconnects
-    socket.on('disconnect', () => {
+    socket?.on('disconnect', () => {
       
       if (socket.currentProject) {
         socket.leave(`project:${socket.currentProject}`);
@@ -118,7 +118,7 @@ export const initializeSocket = (io) => {
     });
 
       // 3. Only THEN allow user to join the room
-    socket.on('error', (error) => {
+    socket?.on('error', (error) => {
       console.error('Socket error:', error);
     });
   });

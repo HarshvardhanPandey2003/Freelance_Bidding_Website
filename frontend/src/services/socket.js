@@ -13,7 +13,7 @@ export const initSocket = (token) => {
       path: SOCKET_PATH,
       withCredentials: true,
       auth: { token },
-      transports: ['websocket'],
+      // transports: ['websocket'],
       timeout: 20000,
     });
   }

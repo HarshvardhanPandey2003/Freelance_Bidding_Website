@@ -33,15 +33,16 @@ const normalizeBidResponse = (bid, projectData = null) => {
     _id: bid._id.toString(),
     project: projectData ? {
       _id: projectData._id.toString(),
-      client: projectData.client.toString()
+      client: projectData.client?.toString() ?? null
     } : {
       _id: bid.project._id ? bid.project._id.toString() : bid.project.toString(),
-      client: projectData?.client?.toString() || bid.project.client?.toString()
+      client: bid.project?.client?.toString() ?? null
     },
-    freelancer: {
-      _id: bid.freelancer._id.toString(),
-      username: bid.freelancer.username
-    },
+    // FIX: Safely check if freelancer exists before accessing _id
+    freelancer: bid.freelancer ? {
+      _id: bid.freelancer._id?.toString(),
+      username: bid.freelancer.username || 'Deleted User'
+    } : null,
     createdAt: bid.createdAt.toISOString(),
     updatedAt: bid.updatedAt.toISOString()
   };
@@ -89,7 +90,7 @@ export const createBid = asyncHandler(async (req, res) => {
 
     // Publish to Redis instead of direct Socket.io emission
     await publishBidEvent('newBid', projectId, responseBid);
-    
+
     res.status(201).json(responseBid);
 
   } catch (error) {
@@ -172,8 +173,8 @@ export const deleteBid = asyncHandler(async (req, res) => {
   await bid.deleteOne();
 
   // Publish to Redis instead of direct Socket.io emission
-  await publishBidEvent('bidDelete', projectId, { 
-    projectId, 
+  await publishBidEvent('bidDelete', projectId, {
+    projectId,
     bidId: bidId.toString()
   });
 
@@ -209,17 +210,18 @@ export const getProjectBids = asyncHandler(async (req, res) => {
     .lean();
 
   // Normalize bid structure
-  const processedBids = bids.map(bid => ({
+const processedBids = bids.map(bid => ({
     ...bid,
     _id: bid._id.toString(),
     project: {
       _id: projectId.toString(),
       client: project.client.toString()
     },
-    freelancer: {
-      _id: bid.freelancer._id.toString(),
-      username: bid.freelancer.username
-    },
+    // Safely handle orphaned bids
+    freelancer: bid.freelancer ? {
+      _id: bid.freelancer._id?.toString(),
+      username: bid.freelancer.username || 'Deleted User'
+    } : { _id: 'unknown', username: 'Deleted User' },
     createdAt: bid.createdAt.toISOString(),
     updatedAt: bid.updatedAt.toISOString()
   }));

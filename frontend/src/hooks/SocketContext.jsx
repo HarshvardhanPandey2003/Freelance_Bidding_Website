@@ -1,64 +1,76 @@
 // src/hooks/SocketContext.jsx
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from './useAuth';
 
-const SocketContext = createContext();
+const SocketContext = createContext({ socket: null, isConnected: false });
 
 export const SocketProvider = ({ children }) => {
   const { user } = useAuth();
-  const [socket, setSocket] = useState(null);
+  const socketRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      // Don't pass an explicit origin URL — let socket.io default to current origin.
-      // Explicitly set the socket path so it goes through Vite proxy in dev or Ingress in prod.
-      console.log(`Socket connecting to origin: ${typeof window !== 'undefined' ? window.location.origin : 'unknown' } (Production: ${import.meta.env.PROD})`);
+    // Guard: only create a socket when user exists and no socket yet
+    if (!user) return;
+    if (socketRef.current) return;
 
-      const socketInstance = io(undefined, {
-        path: '/socket.io',
-        withCredentials: true,
-        auth: { userId: user._id },  // user auth payload
-        reconnection: true, // AUTO-RECONNECT if connection drops
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
-        timeout: 20000,
-        transports: ['websocket'],
-      });
+    const targetUrl = window.location.origin;
+    console.log(`Socket connecting to: ${targetUrl}`);
 
-      socketInstance.on('connect', () => {
-        console.log('Socket connected successfully');
-        setIsConnected(true);
-      });
+    const instance = io(targetUrl, {
+      path: '/socket.io',
+      withCredentials: true,
+      auth: { userId: user._id },
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      timeout: 20000,
+      transports: ['polling', 'websocket'], // Starts with reliable HTTP, then upgrades to WS
+    });
 
-      socketInstance.on('disconnect', () => {
-        console.log('Socket disconnected');
-        setIsConnected(false);
-      });
+    instance.on('connect', () => {
+      console.log('Socket connected with ID:', instance.id);
+      setIsConnected(true);
+    });
 
-      socketInstance.on('connect_error', (err) => {
-        console.error('Socket connection error:', err?.message ?? err);
-        setIsConnected(false);
-      });
-
-      setSocket(socketInstance);
-
-      return () => {
-        socketInstance.disconnect();
-        setIsConnected(false);
-      };
-    } else {
-      setSocket(null);
+    instance.on('disconnect', (reason) => {
+      console.log('Socket disconnected. Reason:', reason);
       setIsConnected(false);
-    }
-  }, [user]);
+      // ⚠️ Do NOT null socketRef.current here.
+      // socket.io manages reconnect internally — if we null the ref,
+      // child useEffects crash on their next socket?.on() call.
+    });
+
+    instance.on('connect_error', (err) => {
+      console.error('Socket connection error:', err?.message ?? err);
+      setIsConnected(false);
+    });
+
+    socketRef.current = instance;
+
+    // Cleanup: runs when user changes (logs out) or component unmounts.
+    // We capture 'instance' in the closure so the cleanup always refers
+    // to the exact socket this effect created — no stale-ref bugs.
+    return () => {
+      instance.disconnect();
+      socketRef.current = null;
+      setIsConnected(false);
+      console.log('Socket destroyed.');
+    };
+  }, [user?._id]); // depend on user._id (a stable string) not the user object
 
   return (
-    <SocketContext.Provider value={{ socket, isConnected }}>
+    <SocketContext.Provider value={{ socketRef, isConnected }}>
       {children}
     </SocketContext.Provider>
   );
 };
 
-export const useSocket = () => useContext(SocketContext);
+// Components always get { socket, isConnected }.
+// socket is read from the ref at call-time → always the live instance, never stale.
+// isConnected is proper React state → triggers re-renders on connect/disconnect.
+export const useSocket = () => {
+  const { socketRef, isConnected } = useContext(SocketContext);
+  return { socket: socketRef?.current ?? null, isConnected };
+};

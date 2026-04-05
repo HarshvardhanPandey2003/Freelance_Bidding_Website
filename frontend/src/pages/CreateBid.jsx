@@ -1,18 +1,12 @@
 // frontend/src/pages/CreateBid.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import { useAuth } from '../hooks/useAuth';
-import { useSocket } from '../hooks/SocketContext'; // Use the context hook
 
 export const CreateBid = () => {
   const params = useParams();
   const projectId = params.projectId || params.id;
   const navigate = useNavigate();
-  const { user } = useAuth();
-  
-  // Use the socket from context
-  const { socket, isConnected } = useSocket();
   
   const [formData, setFormData] = useState({
     bidAmount: '',
@@ -21,45 +15,22 @@ export const CreateBid = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    // Only set up listeners if socket exists and is connected
-    if (socket && isConnected) {
-      const handleNewBid = (newBid) => {
-        console.log('New bid received:', newBid);
-      };
-
-      // Listen for new bid events
-      socket.on('newBid', handleNewBid);
-
-      // Clean up event listeners on component unmount
-      return () => {
-        socket.off('newBid', handleNewBid);
-      };
-    }
-  }, [socket, isConnected]); // Depend on socket and connection state
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
 
     try {
-      const response = await api.post('/api/bids', {
+      // 1. Submit the bid via standard HTTP. 
+      // Your backend bid.controller.js will automatically publish the event to Redis!
+      await api.post('/api/bids', {
         projectId,
         bidAmount: parseFloat(formData.bidAmount),
         message: formData.message
       });
 
-      // Only emit if socket is connected
-      if (socket && isConnected) {
-        socket.emit('newBid', {
-          projectId,
-          bidAmount: parseFloat(formData.bidAmount),
-          message: formData.message,
-          freelancer: user._id
-        });
-      }
-
+      // 2. Navigate back to the project page. 
+      // FreelanceProject.jsx will mount, connect to the socket room, and pull the fresh data.
       navigate(`/freelance-project/${projectId}`);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to submit bid');
@@ -74,6 +45,7 @@ export const CreateBid = () => {
       [e.target.name]: e.target.value
     });
   };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-8">
       <div className="max-w-2xl mx-auto">

@@ -12,17 +12,14 @@ const generateRoomName = (userId1, userId2) => {
     : `chat_${userId2}_${userId1}`;
 };
 
-/**
- * Socket.io chat handler.
- * Expects that socket.user is available from the authentication middleware.
- */
+
 // What exactly this function does is handle chat-related events for authenticated users.
 // We use callbacks because to return data back to the client after an event is emitted.
 export const chatSocketHandler = (socket) => {
   // Event: "startChat"
   // Data payload: { partnerId }
   // Callback: returns { room, messages } or an error.
-  socket.on('startChat', async ({ partnerId }, callback) => {
+  socket?.on('startChat', async ({ partnerId }, callback) => {
     try {
       const user = socket.user; // This comes from your JWT-based auth middleware.
       let paymentRecord;
@@ -72,7 +69,7 @@ export const chatSocketHandler = (socket) => {
   // Callback: returns a success or error message.
   // SO here we send the message to the room and get another callback with the message data.
   // Which we store in MongoDB and the emit to the room.
-  socket.on('sendMessage', async (data, callback) => {
+  socket?.on('sendMessage', async (data, callback) => {
     try {
       const { room, partnerId, message } = data;
       const user = socket.user;

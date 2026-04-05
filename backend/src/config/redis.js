@@ -1,44 +1,25 @@
-//src/condig/redis.js
-// src/config/redis.js (IMPROVED VERSION)
 // src/config/redis.js
 import { createClient } from 'redis';
 
-// Create simple Redis client instead of cluster
-const redisUrl = process.env.REDIS_URI ;  // Defaults to local; override with env var in Docker/CI/CD
-const redisClient = createClient({ url: redisUrl });
+// 1. Check for Kubernetes injected Service IP (Bypasses Alpine DNS bugs!)
+const k8sHost = process.env.REDIS_SERVICE_SERVICE_HOST;
+const k8sPort = process.env.REDIS_SERVICE_SERVICE_PORT;
+
+// 2. Construct URL: Prefer K8s native IP -> fallback to ConfigMap -> fallback to localhost
+const redisUrl = (k8sHost && k8sPort) 
+    ? `redis://${k8sHost}:${k8sPort}` 
+    : (process.env.REDIS_URI || 'redis://localhost:6379');
+
+const redisClient = createClient({ 
+    url: redisUrl,
+    socket: {
+        family: 4 // CRITICAL: Forces Node.js to use IPv4 instead of IPv6
+    }
+});
 
 redisClient.on('error', (err) => console.log('Redis Client Error', err));
-redisClient.on('connect', () => console.log('Connected to Redis'));
+redisClient.on('connect', () => console.log('Connected to Redis dynamically at:', redisUrl));
 
 await redisClient.connect();
 
 export default redisClient;
-
-
-
-
-
-
-// import { createCluster, createClient } from 'redis';
-
-// // Better detection: use NODE_ENV instead of URL parsing
-// const isCluster = process.env.NODE_ENV === 'prod';
-
-// const redisClient = isCluster 
-//   ? createCluster({
-//       rootNodes: [{
-//         url: process.env.REDIS_URI || 'redis://redis-cluster-0.redis-cluster:6379'
-//       }]
-//     })
-//   : createClient({
-//       url: process.env.REDIS_URI || 'redis://localhost:6379'
-//     });
-
-// redisClient.on('error', (err) => console.error('Redis Client Error:', err));
-
-// (async () => {
-//   await redisClient.connect();
-//   console.log(`Connected to Redis in ${isCluster ? 'CLUSTER' : 'SINGLE'} mode`);
-// })();
-
-// export default redisClient;

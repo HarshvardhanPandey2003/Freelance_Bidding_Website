@@ -56,117 +56,70 @@ const ClientProject = () => {
 
   // Socket connection and event handling
   useEffect(() => {
-    if (!socket || !id) return;
-
-    let cleanup = [];
-    let eventListenersSetup = false;
-
-    const setupEventListeners = () => {
-      if (eventListenersSetup) return;
-      
-      console.log('Setting up bid event listeners for client');
-      
-      const handleNewBid = (bidData) => {
-        console.log('Client received newBid:', bidData);
-        
-        // Verify this is for current project
-        const bidProjectId = bidData.project?._id?.toString() || bidData.project?.toString();
-        if (bidProjectId !== id) {
-          console.log('Bid not for current project, ignoring');
-          return;
-        }
-
-        setLocalBids(prev => {
-          const existingIndex = prev.findIndex(bid => bid._id === bidData._id?.toString());
-          if (existingIndex >= 0) {
-            console.log('Bid already exists, preventing duplicate');
-            return prev;
-          }
-          
-          const normalizedBid = normalizeBid(bidData);
-          console.log('Adding new bid to client state:', normalizedBid);
-          return [...prev, normalizedBid];
-        });
-      };
-
-      const handleBidUpdate = (bidData) => {
-        console.log('Client received bidUpdate:', bidData);
-        
-        const bidProjectId = bidData.project?._id?.toString() || bidData.project?.toString();
-        if (bidProjectId !== id) return;
-
-        setLocalBids(prev => prev.map(bid => 
-          bid._id === bidData._id?.toString() ? normalizeBid(bidData) : bid
-        ));
-      };
-
-      const handleBidDelete = ({ projectId, bidId }) => {
-        console.log('Client received bidDelete:', { projectId, bidId });
-        
-        if (projectId !== id) return;
-
-        setLocalBids(prev => prev.filter(bid => bid._id !== bidId?.toString()));
-      };
-
-      socket.on('newBid', handleNewBid);
-      socket.on('bidUpdate', handleBidUpdate);
-      socket.on('bidDelete', handleBidDelete);
-      
-      eventListenersSetup = true;
-
-      cleanup.push(() => {
-        socket.off('newBid', handleNewBid);
-        socket.off('bidUpdate', handleBidUpdate);
-        socket.off('bidDelete', handleBidDelete);
-        eventListenersSetup = false;
-      });
-    };
-
-    const joinProjectRoom = () => {
-      console.log(`Client joining project room: ${id}`);
-      socket.emit('joinProject', id);
-
-      const handleJoinedProject = ({ projectId }) => {
-        if (projectId === id) {
-          console.log('Client successfully joined project room');
-          setSocketConnected(true);
-          setupEventListeners();
-        }
-      };
-
-      const handleError = ({ message }) => {
-        console.error('Socket error:', message);
-        setSocketConnected(false);
-      };
-
-      socket.on('joinedProject', handleJoinedProject);
-      socket.on('error', handleError);
-
-      cleanup.push(() => {
-        socket.emit('leaveProject', id);
-        socket.off('joinedProject', handleJoinedProject);
-        socket.off('error', handleError);
-        setSocketConnected(false);
-      });
-    };
-
-    if (socket.connected) {
-      joinProjectRoom();
-    } else {
-      const handleConnect = () => {
-        console.log('Socket connected, joining project room');
-        joinProjectRoom();
-      };
-      
-      socket.on('connect', handleConnect);
-      cleanup.push(() => socket.off('connect', handleConnect));
+    // 1. Guard Clause
+    if (!socket || !isConnected || !id) {
+      setSocketConnected(false);
+      return;
     }
 
+    console.log(`Client joining project room: ${id}`);
+
+    // 2. Define Handlers
+    const handleNewBid = (bidData) => {
+      const bidProjectId = bidData.project?._id?.toString() || bidData.project?.toString();
+      if (bidProjectId !== id) return;
+
+      setLocalBids(prev => {
+        if (prev.some(bid => bid._id === bidData._id?.toString())) return prev;
+        return [...prev, normalizeBid(bidData)];
+      });
+    };
+
+    const handleBidUpdate = (bidData) => {
+      const bidProjectId = bidData.project?._id?.toString() || bidData.project?.toString();
+      if (bidProjectId !== id) return;
+
+      setLocalBids(prev => prev.map(bid =>
+        bid._id === bidData._id?.toString() ? normalizeBid(bidData) : bid
+      ));
+    };
+
+    const handleBidDelete = ({ projectId, bidId }) => {
+      if (projectId !== id) return;
+      setLocalBids(prev => prev.filter(bid => bid._id !== bidId?.toString()));
+    };
+
+    const handleJoinedProject = ({ projectId }) => {
+      if (projectId === id) {
+        console.log('Client successfully joined project room');
+        setSocketConnected(true);
+      }
+    };
+
+    const handleError = (err) => console.error('Socket error:', err);
+
+    // 3. Attach Listeners
+    socket?.on('newBid', handleNewBid);
+    socket?.on('bidUpdate', handleBidUpdate);
+    socket?.on('bidDelete', handleBidDelete);
+    socket?.on('joinedProject', handleJoinedProject);
+    socket?.on('error', handleError);
+
+    // 4. Emit Join
+    socket.emit('joinProject', id);
+
+    // 5. Bulletproof Cleanup
     return () => {
       console.log('Cleaning up client socket listeners');
-      cleanup.forEach(fn => fn());
+      socket?.off('newBid', handleNewBid);
+      socket?.off('bidUpdate', handleBidUpdate);
+      socket?.off('bidDelete', handleBidDelete);
+      socket?.off('joinedProject', handleJoinedProject);
+      socket?.off('error', handleError);
+      socket?.emit('leaveProject', id);
+      setSocketConnected(false);
     };
-  }, [socket, id, isConnected]);
+  }, [socket, isConnected, id]);
 
   // Rest of your component remains the same...
   if (loading) {
@@ -192,8 +145,8 @@ const ClientProject = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <button 
-          onClick={() => navigate(-1)} 
+        <button
+          onClick={() => navigate(-1)}
           className="text-indigo-500 hover:underline mb-4"
         >
           ← Back
@@ -211,11 +164,11 @@ const ClientProject = () => {
             <h1 className="text-3xl font-bold">{project.title}</h1>
             <span
               className={`text-xs font-medium rounded-full px-2 py-1 uppercase 
-                ${project.status === 'OPEN' 
-                  ? 'bg-green-500/90 text-white' 
-                  : project.status === 'IN_PROGRESS' 
-                  ? 'bg-yellow-500/90 text-gray-800' 
-                  : 'bg-gray-500/90 text-white'}`}
+                ${project.status === 'OPEN'
+                  ? 'bg-green-500/90 text-white'
+                  : project.status === 'IN_PROGRESS'
+                    ? 'bg-yellow-500/90 text-gray-800'
+                    : 'bg-gray-500/90 text-white'}`}
             >
               {project.status}
             </span>
@@ -231,8 +184,8 @@ const ClientProject = () => {
               <h2 className="text-xl font-semibold mb-2">Required Skills</h2>
               <ul className="flex flex-wrap gap-2">
                 {project.skills.map((skill) => (
-                  <li 
-                    key={skill} 
+                  <li
+                    key={skill}
                     className="bg-indigo-500/20 text-indigo-300 text-sm font-medium px-2 py-1 rounded"
                   >
                     {skill}
@@ -260,8 +213,8 @@ const ClientProject = () => {
           ) : (
             <div className="space-y-4">
               {localBids.map((bid) => (
-                <div 
-                  key={bid._id} 
+                <div
+                  key={bid._id}
                   className="bg-gray-700/50 p-4 rounded-lg cursor-pointer hover:bg-gray-700/70 transition-colors"
                   onClick={() => navigate(`/confirmbid/${project._id}/${bid.freelancer._id}/${bid._id}`)}
                 >

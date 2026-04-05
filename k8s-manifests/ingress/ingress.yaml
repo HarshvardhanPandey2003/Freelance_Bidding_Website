@@ -4,15 +4,19 @@ kind: Ingress
 metadata:
   name: app-ingress
   annotations:
-    # Removed the rewrite-target that was causing API issues
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    
+    # ADD THESE THREE LINES FOR SOCKET.IO STICKY SESSIONS
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "route"
+    nginx.ingress.kubernetes.io/session-cookie-hash: "sha1"
 spec:
   ingressClassName: nginx
-  rules:
+  rules:  
   - http:
       paths:
       # Backend API routes
@@ -23,7 +27,7 @@ spec:
             name: backend-service
             port:
               number: 5000
-      # Socket.IO routes - Use ImplementationSpecific (this worked for you before)
+      # Socket.IO routes - Use ImplementationSpecific 
       - path: /socket.io
         pathType: ImplementationSpecific
         backend:

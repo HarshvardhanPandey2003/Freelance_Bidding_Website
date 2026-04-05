@@ -63,12 +63,12 @@ app.use('/api/profile', profileRouter);
 app.use('/api/payments', paymentRouter);
 app.use('/api/chats', chatRoutes);
 
-// Connect to the database then start the HTTP server
 connectDB().then(async () => {
   // Initialize socket.io before starting server
   await initializeSocketIO();
   
-  httpServer.listen(SERVER_PORT, () =>
-    console.log('Server running on port 5000 with Socket.io initialized')
+  // CRITICAL FIX: Explicitly bind to '0.0.0.0' (IPv4) instead of relying on Node defaults
+  httpServer.listen(SERVER_PORT, '0.0.0.0', () =>
+    console.log(`Server running on port ${SERVER_PORT} with Socket.io initialized (IPv4 bound)`)
   );
 });
