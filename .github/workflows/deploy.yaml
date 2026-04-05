@@ -12,13 +12,17 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Build Images Directly in Minikube
+      - name: Build and Stream Images to Minikube
         run: |
-          echo "Building images directly inside Minikube's internal cache..."
-          # This uses Minikube's internal container daemon. No tarballs needed!
-          minikube image build -t docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }} ./backend
-          minikube image build -t docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }} ./frontend
-
+          echo "Building images natively on the WSL host..."
+          podman build -t docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }} ./backend
+          podman build -t docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }} ./frontend
+          
+          echo "Streaming images directly into Minikube's containerd engine..."
+          # This pipes the image archive over SSH directly into the cluster
+          # No .tar files are ever written to your local SSD!
+          podman save docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }} | minikube ssh -- sudo ctr -n k8s.io images import -
+          podman save docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }} | minikube ssh -- sudo ctr -n k8s.io images import -
       - name: Sideload Images to Minikube
         timeout-minutes: 3
         run: |
@@ -50,7 +54,6 @@ jobs:
       - name: Post-Build Cleanup
         if: always()
         run: |
-          echo "Cleaning up dead containers and dangling images to save disk space..."
-          podman container prune -f || true
-          podman image prune -f || true
-          rm -f backend.tar frontend.tar
+          echo "Cleaning up dangling images inside Minikube to save disk space..."
+          # This clears out the old, replaced images inside the cluster
+          minikube ssh -- docker image prune -f || true
