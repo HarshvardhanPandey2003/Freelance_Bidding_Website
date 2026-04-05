@@ -25,4 +25,7 @@ yarn-error.log*
 *.temp
 .cache
 /git_commands
-/documentation
+/documentation.txt
+/logs
+/locust-env
+/_Files
