@@ -23,6 +23,7 @@ jobs:
           podman save -o frontend.tar docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}
 
       - name: Sideload Images to Minikube
+        timeout-minutes: 3
         run: |
           echo "Loading physical tar archives directly into Minikube..."
           minikube image load backend.tar
