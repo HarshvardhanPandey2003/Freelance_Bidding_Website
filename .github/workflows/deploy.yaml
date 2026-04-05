@@ -38,11 +38,10 @@ jobs:
           cd freelance-bidding-gitops
           
           echo "Injecting new image tags into GitOps manifests..."
-          # Update the Backend Manifest
-          sed -i "s|image: harshvardhan2003/freelance-backend:.*|image: docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}|g" apps/backend/backend-manifests.yaml
+          # The regex 'image: .*freelance-backend:.*' ensures it always finds the line and replaces the whole thing
+          sed -i -E "s|image: .*freelance-backend:.*|image: docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}|g" apps/backend/backend-manifests.yaml
           
-          # Update the Frontend Manifest
-          sed -i "s|image: harshvardhan2003/freelance-frontend:.*|image: docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}|g" apps/frontend/frontend-manifests.yaml
+          sed -i -E "s|image: .*freelance-frontend:.*|image: docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}|g" apps/frontend/frontend-manifests.yaml
           
           echo "Committing and pushing changes..."
           git config user.name "github-actions[bot]"
