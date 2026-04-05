@@ -1,4 +1,4 @@
-name: Local DevOps Lifecycle (WSL)
+name: Local GitOps Lifecycle (WSL)
 
 on:
   push:
@@ -6,24 +6,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  build-and-update-gitops:
     runs-on: self-hosted
-    env:
-      NAMESPACE: freelance-hub
-      BACKEND_IMG: harshvardhan2003/freelance-backend:latest
-      FRONTEND_IMG: harshvardhan2003/freelance-frontend:latest
-
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Ensure Namespace Exists
-        run: |
-          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
-
       - name: Build and Patch Images (Podman)
         run: |
-          # Force the explicit docker.io/ prefix to stop Podman from adding localhost/
+          echo "Building images with tag: ${{ github.run_id }}"
           podman build -t docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }} ./backend
           podman build -t docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }} ./frontend
           
@@ -34,89 +25,36 @@ jobs:
       - name: Sideload Images to Minikube
         run: |
           echo "Loading physical tar archives directly into Minikube..."
-          # Minikube reads the file directly, bypassing all registry confusion
           minikube image load backend.tar
           minikube image load frontend.tar
 
-      - name: Validate Kubernetes Manifests
+      - name: Update GitOps Repository
+        env:
+          GITOPS_PAT: ${{ secrets.GITOPS_PAT }}
         run: |
-          echo "Dry-run check to ensure YAML syntax is valid..."
-          kubectl apply --dry-run=client -f k8s-manifests/configmaps/
-          kubectl apply --dry-run=client -f k8s-manifests/deployments/
-
-      - name: Generate Local Secrets File
-        run: |
-          echo "Generating local-secrets.yaml from GitHub Secrets..."          
-          mkdir -p k8s-manifests/secrets
+          echo "Cloning GitOps repository..."
+          # Clone the repo using the PAT for authentication
+          git clone https://x-access-token:${GITOPS_PAT}@github.com/HarshvardhanPandey2003/freelance-bidding-gitops.git
+          cd freelance-bidding-gitops
           
-          cat <<EOF > k8s-manifests/secrets/local-secrets.yaml
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: backend-secrets-k8s
-          type: Opaque
-          stringData:
-            MONGODB_URI: "${{ secrets.MONGODB_URI }}"
-            MONGODB_URL: "${{ secrets.MONGODB_URI }}"
-            JWT_SECRET: "${{ secrets.JWT_SECRET }}"
-            RAZORPAY_KEY_ID: "${{ secrets.RAZORPAY_KEY_ID }}"
-            RAZORPAY_KEY_SECRET: "${{ secrets.RAZORPAY_KEY_SECRET }}"
-          ---
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: frontend-secrets-k8s
-          type: Opaque
-          stringData:
-            VITE_RAZORPAY_KEY: "${{ secrets.RAZORPAY_KEY_ID }}"
-          EOF
-
-      - name: Infrastructure Sync
-        run: |
-          echo "Applying Secrets, ConfigMaps, and HPA..."
-          kubectl apply -f k8s-manifests/secrets/local-secrets.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f k8s-manifests/configmaps/app-config.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f k8s-manifests/autoscaling/hpa-combined.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f k8s-manifests/monitoring/backend-alert.yaml -n ${{ env.NAMESPACE }}
-
-      - name: Zero-Downtime Deployment
-        run: |
-          echo "Injecting unique tags into Kubernetes YAML manifests..."
-          # Explicitly inject the docker.io/ prefix into the YAML so Kubernetes matches the tarball exactly
-          sed -i "s|harshvardhan2003/freelance-backend:latest|docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}|g" k8s-manifests/deployments/backend.yaml
-          sed -i "s|harshvardhan2003/freelance-frontend:latest|docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}|g" k8s-manifests/deployments/frontend.yaml
+          echo "Injecting new image tags into GitOps manifests..."
+          # Update the Backend Manifest
+          sed -i "s|image: harshvardhan2003/freelance-backend:.*|image: docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}|g" apps/backend/backend-manifests.yaml
           
-          echo "Deploying Application Components..."
-          kubectl apply -f k8s-manifests/deployments/redis.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f k8s-manifests/deployments/backend.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f k8s-manifests/deployments/frontend.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f k8s-manifests/ingress/ingress.yaml -n ${{ env.NAMESPACE }}
+          # Update the Frontend Manifest
+          sed -i "s|image: harshvardhan2003/freelance-frontend:.*|image: docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}|g" apps/frontend/frontend-manifests.yaml
+          
+          echo "Committing and pushing changes..."
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps/backend/backend-manifests.yaml apps/frontend/frontend-manifests.yaml
+          git commit -m "Deploy tag ${{ github.run_id }} via CI"
+          git push origin main
 
-      - name: Deployment Health Verification
-        run: |
-          echo "Verifying rollout status..."
-          kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=120s
-          kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=120s
-
-      - name: Post-Deploy Cleanup
+      - name: Post-Build Cleanup
         if: always()
         run: |
           echo "Cleaning up dead containers and dangling images to save disk space..."
-          # Clean up stopped temporary containers first
           podman container prune -f || true
-          # Then clean up the dangling images
           podman image prune -f || true
-
-      - name: Output Application URLs
-        run: |
-          echo "DEPLOYMENT SUCCESSFUL!"
-          echo "========================================="
-          echo "Frontend is live at: http://freelance.local"
-          echo "Backend API is at:  http://freelance.local/api/auth"
-          echo "========================================="
-          echo "Note: Ensure 'minikube tunnel' is running in a separate WSL terminal to access these links."
-          
-          # This writes a visual summary to the GitHub Actions UI
-          echo "### Deployment Successful" >> $GITHUB_STEP_SUMMARY
-          echo "- **Frontend:** [http://freelance.local](http://freelance.local)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Backend API:** [http://freelance.local/api](http://freelance.local/api)" >> $GITHUB_STEP_SUMMARY
+          rm -f backend.tar frontend.tar
