@@ -41,10 +41,8 @@ jobs:
           cd freelance-bidding-gitops
           
           echo "Injecting local registry tags into GitOps manifests..."
-          # Update Backend to point to localhost:5000
+          # Update Frontend and Backend to point to localhost:5000
           sed -i -E "s|image: .*freelance-backend:.*|image: localhost:5000/freelance-backend:${{ github.run_id }}|g" apps/backend/backend-manifests.yaml
-          
-          # Update Frontend to point to localhost:5000
           sed -i -E "s|image: .*freelance-frontend:.*|image: localhost:5000/freelance-frontend:${{ github.run_id }}|g" apps/frontend/frontend-manifests.yaml
           
           echo "Committing and pushing changes..."
