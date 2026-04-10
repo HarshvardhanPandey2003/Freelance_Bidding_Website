@@ -1,130 +1,68 @@
-name: Local DevOps Lifecycle (WSL)
+name: GitOps Build & Manifest Update
 
 on:
   push:
     branches: [ minikube ]
   workflow_dispatch:
-# This workflow is designed for local development and testing using Minikube on WSL.
-jobs:
-  build-and-deploy:
-    runs-on: self-hosted
-    env:
-      NAMESPACE: freelance-hub
-      BACKEND_IMG: harshvardhan2003/freelance-backend:latest
-      FRONTEND_IMG: harshvardhan2003/freelance-frontend:latest
 
+jobs:
+  build-and-push:
+    name: Build & Push Images
+    runs-on: self-hosted
+    outputs:
+      new_tag: ${{ steps.vars.outputs.sha_short }}
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Ensure Namespace Exists
-        run: |
-          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+      - name: Set Version Tag
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Build Images Directly in Minikube
+      - name: Build Backend (Podman)
         run: |
-          echo "Building images inside Minikube daemon..."
-          # No 'docker.io/' prefix. Just 'project/service:tag'
-          minikube image build -t freelance-backend:${{ github.run_id }} ./backend
-          minikube image build -t freelance-frontend:${{ github.run_id }} ./frontend
+          podman build -t localhost:35319/freelance-backend:${{ steps.vars.outputs.sha_short }} ./backend
+          podman push localhost:35319/freelance-backend:${{ steps.vars.outputs.sha_short }}
 
-      - name: Clean Up Old Minikube Images (Keep last 2)
+      - name: Build Frontend (Podman)
         run: |
-          # Professional touch: Keep the disk clean but allow for rollbacks
-          echo "Pruning old images from Minikube..."
-          # This lists our images, sorts them, and removes everything except the most recent 2 tags
-          IMAGES_TO_DELETE=$(minikube image ls --format table | grep freelance-backend | head -n -2 | awk '{print $1":"$2}')
-          if [ ! -z "$IMAGES_TO_DELETE" ]; then
-            minikube image rm $IMAGES_TO_DELETE
-          fi
+          podman build -t localhost:35319/freelance-frontend:${{ steps.vars.outputs.sha_short }} ./frontend
+          podman push localhost:35319/freelance-frontend:${{ steps.vars.outputs.sha_short }}
 
-      - name: Sideload Images to Minikube
-        run: |
-          echo "Loading physical tar archives directly into Minikube..."
-          # Minikube reads the file directly, bypassing all registry confusion
-          minikube image load backend.tar
-          minikube image load frontend.tar
-
-      - name: Validate Kubernetes Manifests
-        run: |
-          echo "Dry-run check to ensure YAML syntax is valid..."
-          kubectl apply --dry-run=client -f k8s-manifests/configmaps/
-          kubectl apply --dry-run=client -f k8s-manifests/deployments/
-
-      - name: Generate Local Secrets File
-        run: |
-          echo "Generating local-secrets.yaml from GitHub Secrets..."          
-          mkdir -p k8s-manifests/secrets
-          
-          cat <<EOF > k8s-manifests/secrets/local-secrets.yaml
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: backend-secrets-k8s
-          type: Opaque
-          stringData:
-            MONGODB_URI: "${{ secrets.MONGODB_URI }}"
-            MONGODB_URL: "${{ secrets.MONGODB_URI }}"
-            JWT_SECRET: "${{ secrets.JWT_SECRET }}"
-            RAZORPAY_KEY_ID: "${{ secrets.RAZORPAY_KEY_ID }}"
-            RAZORPAY_KEY_SECRET: "${{ secrets.RAZORPAY_KEY_SECRET }}"
-          ---
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: frontend-secrets-k8s
-          type: Opaque
-          stringData:
-            VITE_RAZORPAY_KEY: "${{ secrets.RAZORPAY_KEY_ID }}"
-          EOF
-
-      - name: Infrastructure Sync
-        run: |
-          echo "Applying Secrets, ConfigMaps, and HPA..."
-          kubectl apply -f k8s-manifests/secrets/local-secrets.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f k8s-manifests/configmaps/app-config.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f k8s-manifests/autoscaling/hpa-combined.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f k8s-manifests/monitoring/backend-alert.yaml -n ${{ env.NAMESPACE }}
-
-      - name: Zero-Downtime Deployment
-        run: |
-          echo "Updating Manifests with new tags..."
-          # We use a simple name. No docker.io. 
-          # This ensures K8s looks locally first because there's no registry domain.
-          sed -i "s|image: .*freelance-backend.*|image: freelance-backend:${{ github.run_id }}|g" k8s-manifests/deployments/backend.yaml
-          sed -i "s|image: .*freelance-frontend.*|image: freelance-frontend:${{ github.run_id }}|g" k8s-manifests/deployments/frontend.yaml
-          
-          echo "Deploying Application Components..."
-          kubectl apply -f k8s-manifests/deployments/redis.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f k8s-manifests/deployments/backend.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f k8s-manifests/deployments/frontend.yaml -n ${{ env.NAMESPACE }}
-          kubectl apply -f k8s-manifests/ingress/ingress.yaml -n ${{ env.NAMESPACE }}
-
-      - name: Deployment Health Verification
-        run: |
-          echo "Verifying rollout status..."
-          kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=120s
-          kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=120s
-
-      - name: Post-Deploy Cleanup
+      - name: Local Cleanup
         if: always()
-        run: |
-          echo "Cleaning up dead containers and dangling images to save disk space..."
-          # Clean up stopped temporary containers first
-          podman container prune -f || true
-          # Then clean up the dangling images
-          podman image prune -f || true
+        run: podman image prune -f
 
-      - name: Output Application URLs
+  update-gitops-repo:
+    name: Update GitOps Manifests
+    needs: build-and-push
+    runs-on: self-hosted
+    steps:
+      - name: Checkout GitOps Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/freelance-bidding-gitops
+          token: ${{ secrets.GITOPS_PAT }} # Requires a PAT with 'repo' scope
+          path: gitops-repo
+
+      - name: Update Image Tags in Manifests
         run: |
-          echo "DEPLOYMENT SUCCESSFUL!"
-          echo "========================================="
-          echo "Frontend is live at: http://freelance.local"
-          echo "Backend API is at:  http://freelance.local/api/auth"
-          echo "========================================="
-          echo "Note: Ensure 'minikube tunnel' is running in a separate WSL terminal to access these links."
+          NEW_TAG="${{ needs.build-and-push.outputs.new_tag }}"
           
-          # This writes a visual summary to the GitHub Actions UI
-          echo "### Deployment Successful" >> $GITHUB_STEP_SUMMARY
-          echo "- **Frontend:** [http://freelance.local](http://freelance.local)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Backend API:** [http://freelance.local/api](http://freelance.local/api)" >> $GITHUB_STEP_SUMMARY
+          echo "Updating backend manifest to tag: $NEW_TAG"
+          # We use '|' as a delimiter in sed because the image name contains '/'
+          sed -i "s|image: localhost:5000/freelance-backend:.*|image: localhost:5000/freelance-backend:$NEW_TAG|g" \
+            gitops-repo/apps/backend/backend-manifests.yaml
+          
+          echo "Updating frontend manifest to tag: $NEW_TAG"
+          sed -i "s|image: localhost:5000/freelance-frontend:.*|image: localhost:5000/freelance-frontend:$NEW_TAG|g" \
+            gitops-repo/apps/frontend/frontend-manifests.yaml
+
+      - name: Commit and Push to GitOps Repo
+        working-directory: gitops-repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: update images to tag ${{ needs.build-and-push.outputs.new_tag }} [skip ci]" || echo "No changes to commit"
+          git push origin main

@@ -10,20 +10,26 @@ echo "☸️  Starting ArgoCD Installation via Helm..."
 # 1. Add Argo Repo
 echo "📦 Adding ArgoCD Helm repository..."
 helm repo add argo https://argoproj.github.io/argo-helm
-helm repo update
 
-# 2. Install/Upgrade (Idempotent)
+# 2. Targeted Update (The "Platform Engineer" fix)
+echo "🔄 Updating Argo repository specifically..."
+# We don't use 'helm repo update' (which hits everything). 
+# We hit only the one we need to avoid the 'context deadline' on other repos.
+helm repo update argo 
+
+# 3. Install/Upgrade (Idempotent)
 echo "🚀 Installing ArgoCD into namespace: $NAMESPACE"
 # Using --atomic ensures that if it fails, it rolls back automatically
+# Added --create-namespace for a fresh cluster scenario
 helm upgrade --install argocd argo/argo-cd \
     --namespace $NAMESPACE \
     --create-namespace \
     --set server.service.type=ClusterIP \
     --wait --timeout 300s
 
-# 3. Retrieve Initial Password
+# 4. Retrieve Initial Password
 echo "🔑 Retrieving initial admin password..."
-# The secret name is different in the Helm chart vs the raw manifest
+# Helm chart names the secret 'argocd-initial-admin-secret'
 if kubectl get secret argocd-initial-admin-secret -n $NAMESPACE >/dev/null 2>&1; then
     PASS=$(kubectl -n $NAMESPACE get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
     echo "------------------------------------------------------"
