@@ -21,15 +21,22 @@ jobs:
         run: |
           kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Build and Patch Images (Podman)
+      - name: Build Images Directly in Minikube
         run: |
-          # Force the explicit docker.io/ prefix to stop Podman from adding localhost/
-          podman build -t docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }} ./backend
-          podman build -t docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }} ./frontend
-          
-          echo "Saving images to physical tar archives..."
-          podman save -o backend.tar docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}
-          podman save -o frontend.tar docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}
+          echo "Building images inside Minikube daemon..."
+          # No 'docker.io/' prefix. Just 'project/service:tag'
+          minikube image build -t freelance-backend:${{ github.run_id }} ./backend
+          minikube image build -t freelance-frontend:${{ github.run_id }} ./frontend
+
+      - name: Clean Up Old Minikube Images (Keep last 2)
+        run: |
+          # Professional touch: Keep the disk clean but allow for rollbacks
+          echo "Pruning old images from Minikube..."
+          # This lists our images, sorts them, and removes everything except the most recent 2 tags
+          IMAGES_TO_DELETE=$(minikube image ls --format table | grep freelance-backend | head -n -2 | awk '{print $1":"$2}')
+          if [ ! -z "$IMAGES_TO_DELETE" ]; then
+            minikube image rm $IMAGES_TO_DELETE
+          fi
 
       - name: Sideload Images to Minikube
         run: |
@@ -81,10 +88,11 @@ jobs:
 
       - name: Zero-Downtime Deployment
         run: |
-          echo "Injecting unique tags into Kubernetes YAML manifests..."
-          # Explicitly inject the docker.io/ prefix into the YAML so Kubernetes matches the tarball exactly
-          sed -i "s|harshvardhan2003/freelance-backend:latest|docker.io/harshvardhan2003/freelance-backend:${{ github.run_id }}|g" k8s-manifests/deployments/backend.yaml
-          sed -i "s|harshvardhan2003/freelance-frontend:latest|docker.io/harshvardhan2003/freelance-frontend:${{ github.run_id }}|g" k8s-manifests/deployments/frontend.yaml
+          echo "Updating Manifests with new tags..."
+          # We use a simple name. No docker.io. 
+          # This ensures K8s looks locally first because there's no registry domain.
+          sed -i "s|image: .*freelance-backend.*|image: freelance-backend:${{ github.run_id }}|g" k8s-manifests/deployments/backend.yaml
+          sed -i "s|image: .*freelance-frontend.*|image: freelance-frontend:${{ github.run_id }}|g" k8s-manifests/deployments/frontend.yaml
           
           echo "Deploying Application Components..."
           kubectl apply -f k8s-manifests/deployments/redis.yaml -n ${{ env.NAMESPACE }}
