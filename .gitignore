@@ -29,3 +29,5 @@ yarn-error.log*
 /logs
 /locust-env
 /_Files
+logs.txt
+oom
