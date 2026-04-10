@@ -1,62 +1,130 @@
-name: Local GitOps Lifecycle (WSL)
+name: Local DevOps Lifecycle (WSL)
 
 on:
   push:
     branches: [ minikube ]
   workflow_dispatch:
-
+# This workflow is designed for local development and testing using Minikube on WSL.
 jobs:
-  build-and-update-gitops:
+  build-and-deploy:
     runs-on: self-hosted
+    env:
+      NAMESPACE: freelance-hub
+      BACKEND_IMG: harshvardhan2003/freelance-backend:latest
+      FRONTEND_IMG: harshvardhan2003/freelance-frontend:latest
 
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Build and Push to Local Registry
+      - name: Ensure Namespace Exists
         run: |
-          echo "Starting robust port-forward on port 5050..."
-          kubectl port-forward --namespace kube-system service/registry 5050:80 > pf.log 2>&1 &
-          
-          echo "Waiting for registry to wake up..."
-          sleep 5
-          
-          echo "Verifying registry connection..."
-          curl -s http://localhost:5050/v2/ > /dev/null || (echo "Port forward failed!" && cat pf.log && exit 1)
-          
-          echo "Building images..."
-          podman build -t localhost:5050/freelance-backend:${{ github.run_id }} ./backend
-          podman build -t localhost:5050/freelance-frontend:${{ github.run_id }} ./frontend
-          
-          echo "Pushing images to the cluster..."
-          podman push --tls-verify=false localhost:5050/freelance-backend:${{ github.run_id }}
-          podman push --tls-verify=false localhost:5050/freelance-frontend:${{ github.run_id }}
+          kubectl create namespace ${{ env.NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Update GitOps Repository
-        env:
-          GITOPS_PAT: ${{ secrets.GITOPS_PAT }}
+      - name: Build Images Directly in Minikube
         run: |
-          echo "Cloning GitOps repository..."
-          git clone https://x-access-token:${GITOPS_PAT}@github.com/HarshvardhanPandey2003/freelance-bidding-gitops.git
-          cd freelance-bidding-gitops
-          
-          echo "Injecting local registry tags into GitOps manifests..."
-          # ⚠️ IMPORTANT: Use 5000 here (cluster internal port)
-          sed -i -E "s|image: .*freelance-backend:.*|image: localhost:5000/freelance-backend:${{ github.run_id }}|g" apps/backend/backend-manifests.yaml
-          sed -i -E "s|image: .*freelance-frontend:.*|image: localhost:5000/freelance-frontend:${{ github.run_id }}|g" apps/frontend/frontend-manifests.yaml
-          
-          echo "Committing and pushing changes..."
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add apps/backend/backend-manifests.yaml apps/frontend/frontend-manifests.yaml
-          git commit -m "Deploy tag ${{ github.run_id }} via CI" || echo "No changes to commit"
-          git push origin main
+          echo "Building images inside Minikube daemon..."
+          # No 'docker.io/' prefix. Just 'project/service:tag'
+          minikube image build -t freelance-backend:${{ github.run_id }} ./backend
+          minikube image build -t freelance-frontend:${{ github.run_id }} ./frontend
 
-      - name: Post-Build Cleanup
+      - name: Clean Up Old Minikube Images (Keep last 2)
+        run: |
+          # Professional touch: Keep the disk clean but allow for rollbacks
+          echo "Pruning old images from Minikube..."
+          # This lists our images, sorts them, and removes everything except the most recent 2 tags
+          IMAGES_TO_DELETE=$(minikube image ls --format table | grep freelance-backend | head -n -2 | awk '{print $1":"$2}')
+          if [ ! -z "$IMAGES_TO_DELETE" ]; then
+            minikube image rm $IMAGES_TO_DELETE
+          fi
+
+      - name: Sideload Images to Minikube
+        run: |
+          echo "Loading physical tar archives directly into Minikube..."
+          # Minikube reads the file directly, bypassing all registry confusion
+          minikube image load backend.tar
+          minikube image load frontend.tar
+
+      - name: Validate Kubernetes Manifests
+        run: |
+          echo "Dry-run check to ensure YAML syntax is valid..."
+          kubectl apply --dry-run=client -f k8s-manifests/configmaps/
+          kubectl apply --dry-run=client -f k8s-manifests/deployments/
+
+      - name: Generate Local Secrets File
+        run: |
+          echo "Generating local-secrets.yaml from GitHub Secrets..."          
+          mkdir -p k8s-manifests/secrets
+          
+          cat <<EOF > k8s-manifests/secrets/local-secrets.yaml
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: backend-secrets-k8s
+          type: Opaque
+          stringData:
+            MONGODB_URI: "${{ secrets.MONGODB_URI }}"
+            MONGODB_URL: "${{ secrets.MONGODB_URI }}"
+            JWT_SECRET: "${{ secrets.JWT_SECRET }}"
+            RAZORPAY_KEY_ID: "${{ secrets.RAZORPAY_KEY_ID }}"
+            RAZORPAY_KEY_SECRET: "${{ secrets.RAZORPAY_KEY_SECRET }}"
+          ---
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: frontend-secrets-k8s
+          type: Opaque
+          stringData:
+            VITE_RAZORPAY_KEY: "${{ secrets.RAZORPAY_KEY_ID }}"
+          EOF
+
+      - name: Infrastructure Sync
+        run: |
+          echo "Applying Secrets, ConfigMaps, and HPA..."
+          kubectl apply -f k8s-manifests/secrets/local-secrets.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f k8s-manifests/configmaps/app-config.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f k8s-manifests/autoscaling/hpa-combined.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f k8s-manifests/monitoring/backend-alert.yaml -n ${{ env.NAMESPACE }}
+
+      - name: Zero-Downtime Deployment
+        run: |
+          echo "Updating Manifests with new tags..."
+          # We use a simple name. No docker.io. 
+          # This ensures K8s looks locally first because there's no registry domain.
+          sed -i "s|image: .*freelance-backend.*|image: freelance-backend:${{ github.run_id }}|g" k8s-manifests/deployments/backend.yaml
+          sed -i "s|image: .*freelance-frontend.*|image: freelance-frontend:${{ github.run_id }}|g" k8s-manifests/deployments/frontend.yaml
+          
+          echo "Deploying Application Components..."
+          kubectl apply -f k8s-manifests/deployments/redis.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f k8s-manifests/deployments/backend.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f k8s-manifests/deployments/frontend.yaml -n ${{ env.NAMESPACE }}
+          kubectl apply -f k8s-manifests/ingress/ingress.yaml -n ${{ env.NAMESPACE }}
+
+      - name: Deployment Health Verification
+        run: |
+          echo "Verifying rollout status..."
+          kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=120s
+          kubectl rollout status deployment/frontend -n ${{ env.NAMESPACE }} --timeout=120s
+
+      - name: Post-Deploy Cleanup
         if: always()
         run: |
-          echo "Cleaning up local build cache..."
+          echo "Cleaning up dead containers and dangling images to save disk space..."
+          # Clean up stopped temporary containers first
+          podman container prune -f || true
+          # Then clean up the dangling images
           podman image prune -f || true
+
+      - name: Output Application URLs
+        run: |
+          echo "DEPLOYMENT SUCCESSFUL!"
+          echo "========================================="
+          echo "Frontend is live at: http://freelance.local"
+          echo "Backend API is at:  http://freelance.local/api/auth"
+          echo "========================================="
+          echo "Note: Ensure 'minikube tunnel' is running in a separate WSL terminal to access these links."
           
-          echo "Killing port-forward process..."
-          pkill -f "kubectl port-forward" || true
+          # This writes a visual summary to the GitHub Actions UI
+          echo "### Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend:** [http://freelance.local](http://freelance.local)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend API:** [http://freelance.local/api](http://freelance.local/api)" >> $GITHUB_STEP_SUMMARY
