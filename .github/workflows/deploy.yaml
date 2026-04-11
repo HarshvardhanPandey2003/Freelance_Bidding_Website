@@ -43,6 +43,7 @@ jobs:
         with:
           repository: ${{ github.repository_owner }}/freelance-bidding-gitops
           token: ${{ secrets.GITOPS_PAT }} # Requires a PAT with 'repo' scope
+          ref: main
           path: gitops-repo
 
       - name: Update Image Tags in Manifests

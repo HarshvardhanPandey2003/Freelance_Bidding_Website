@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: 'https://github.com/HarshvardhanPandey2003/freelance-bidding-gitops.git'
-    targetRevision: minikube
+    targetRevision: main
     path: .
     directory:
       recurse: true
