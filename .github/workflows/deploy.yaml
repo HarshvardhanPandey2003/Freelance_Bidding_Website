@@ -11,6 +11,8 @@ jobs:
     runs-on: self-hosted
     outputs:
       new_tag: ${{ steps.vars.outputs.sha_short }}
+      # Export the dynamically found port so other jobs could use it if needed
+      registry_port: ${{ steps.registry.outputs.port }} 
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -19,15 +21,28 @@ jobs:
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Build Backend (Podman)
+      - name: Fetch Dynamic Minikube Registry Port
+        id: registry
+        # This safely extracts the port Minikube is currently using, preventing breaks on restart
         run: |
-          podman build -t localhost:35319/freelance-backend:${{ steps.vars.outputs.sha_short }} ./backend
-          podman push localhost:35319/freelance-backend:${{ steps.vars.outputs.sha_short }}
+          PORT=$(minikube profile list -o json | jq -r '.valid[0].Config.Nodes[0].PortMappings[] | select(.Port==5000) | .TargetPort')
+          if [ -z "$PORT" ]; then
+            echo "Error: Could not find Minikube registry port. Is Minikube running with the registry addon?"
+            exit 1
+          fi
+          echo "port=$PORT" >> $GITHUB_OUTPUT
+          echo "Dynamically targeting registry port: $PORT"
 
-      - name: Build Frontend (Podman)
+      - name: Build & Push Backend (Podman)
         run: |
-          podman build -t localhost:35319/freelance-frontend:${{ steps.vars.outputs.sha_short }} ./frontend
-          podman push localhost:35319/freelance-frontend:${{ steps.vars.outputs.sha_short }}
+          podman build -t localhost:${{ steps.registry.outputs.port }}/freelance-backend:${{ steps.vars.outputs.sha_short }} ./backend
+          # --tls-verify=false is strictly required for local minikube registries
+          podman push localhost:${{ steps.registry.outputs.port }}/freelance-backend:${{ steps.vars.outputs.sha_short }} --tls-verify=false
+
+      - name: Build & Push Frontend (Podman)
+        run: |
+          podman build -t localhost:${{ steps.registry.outputs.port }}/freelance-frontend:${{ steps.vars.outputs.sha_short }} ./frontend
+          podman push localhost:${{ steps.registry.outputs.port }}/freelance-frontend:${{ steps.vars.outputs.sha_short }} --tls-verify=false
 
       - name: Local Cleanup
         if: always()
