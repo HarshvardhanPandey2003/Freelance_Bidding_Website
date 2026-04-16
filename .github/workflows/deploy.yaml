@@ -20,11 +20,13 @@ jobs:
       - name: Set Version Tag
         id: vars
         run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        # sha_short is short version of the commit hash and we take it by using --short flag which means
+        # that the tag will be unique for each commit and will reflect the exact version of the code being deployed
 
       - name: Fetch Dynamic Minikube Registry Port
         id: registry
         run: |
-          # Use Podman natively to find where the internal port 5000 is mapped on the host
+          # What outside port is currently connected to Minikube's internal port 5000 , It usually answers with something like 0.0.0.0:35319
           PORT=$(podman port minikube 5000/tcp | cut -d':' -f2)
           
           if [ -z "$PORT" ]; then
@@ -37,8 +39,10 @@ jobs:
 
       - name: Build & Push Backend (Podman)
         run: |
+          # We tag the image dynamically with short hash commit to ensure uniqueness and port  
           podman build -t localhost:${{ steps.registry.outputs.port }}/freelance-backend:${{ steps.vars.outputs.sha_short }} ./backend
-          # --tls-verify=false is strictly required for local minikube registries
+          
+          # --tls-verify=false is done for local registry without TLS because Minikube's registry addon doesn't support TLS by default, so we need to disable TLS 
           podman push localhost:${{ steps.registry.outputs.port }}/freelance-backend:${{ steps.vars.outputs.sha_short }} --tls-verify=false
 
       - name: Build & Push Frontend (Podman)
