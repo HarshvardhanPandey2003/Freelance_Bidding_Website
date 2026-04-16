@@ -23,13 +23,15 @@ jobs:
 
       - name: Fetch Dynamic Minikube Registry Port
         id: registry
-        # This safely extracts the port Minikube is currently using, preventing breaks on restart
         run: |
-          PORT=$(minikube profile list -o json | jq -r '.valid[0].Config.Nodes[0].PortMappings[] | select(.Port==5000) | .TargetPort')
+          # Use Podman natively to find where the internal port 5000 is mapped on the host
+          PORT=$(podman port minikube 5000/tcp | cut -d':' -f2)
+          
           if [ -z "$PORT" ]; then
-            echo "Error: Could not find Minikube registry port. Is Minikube running with the registry addon?"
+            echo "Error: Could not find Minikube registry port. Is the registry addon enabled?"
             exit 1
           fi
+          
           echo "port=$PORT" >> $GITHUB_OUTPUT
           echo "Dynamically targeting registry port: $PORT"
 
