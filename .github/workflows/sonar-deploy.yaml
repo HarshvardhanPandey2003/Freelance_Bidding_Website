@@ -44,11 +44,10 @@ jobs:
         run: |
           npm install -g sonarqube-scanner
           
-          # We define exactly what to scan (backend, frontend) and what to exclude (node_modules, build artifacts).
-          # NOTE: Verify your exact projectKey in your SonarCloud project dashboard if this fails.
+          # Use the EXACT manual keys you just created in Steps 1 and 2
           sonar-scanner \
-            -Dsonar.organization=harshvardhanpandey2003 \
-            -Dsonar.projectKey=harshvardhanpandey2003_freelance-bidding \
+            -Dsonar.organization=harshvardhan-manual-org \
+            -Dsonar.projectKey=freelance-bidding-manual \
             -Dsonar.sources=backend,frontend \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.javascript.node.maxspace=4096 \
