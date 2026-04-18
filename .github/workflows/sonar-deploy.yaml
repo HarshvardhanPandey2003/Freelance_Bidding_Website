@@ -1,0 +1,139 @@
+name: GitOps Build & Manifest Update
+
+on:
+  push:
+    branches: [ minikube ]
+  workflow_dispatch:
+
+jobs:
+  # ---------------------------------------------------------
+  # JOB 1: Code Quality Scan (Node.js Monorepo Optimized)
+  # ---------------------------------------------------------
+  sonarcloud-analysis:
+    name: SonarCloud Code Analysis
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          # CRITICAL: SonarCloud requires full git history for accurate "New Code" analysis
+          fetch-depth: 0  
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up JDK 17 (Required engine for Sonar Scanner)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Install and Run Sonar Scanner
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
+        run: |
+          npm install -g sonarqube-scanner
+          
+          # We define exactly what to scan (backend, frontend) and what to exclude (node_modules, build artifacts).
+          # NOTE: Verify your exact projectKey in your SonarCloud project dashboard if this fails.
+          sonar-scanner \
+            -Dsonar.organization=harshvardhanpandey2003 \
+            -Dsonar.projectKey=harshvardhanpandey2003_freelance-bidding \
+            -Dsonar.sources=backend,frontend \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.javascript.node.maxspace=4096 \
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/.next/**,**/*.test.js,**/*.spec.js \
+            -Dsonar.qualitygate.wait=true \
+            -Dsonar.qualitygate.timeout=300
+
+  # ---------------------------------------------------------
+  # JOB 2: Build & Push (Podman / Minikube Registry)
+  # ---------------------------------------------------------
+  build-and-push:
+    name: Build & Push Images
+    needs: sonarcloud-analysis # Execution blocked until SonarQube passes the Quality Gate
+    runs-on: self-hosted
+    outputs:
+      new_tag: ${{ steps.vars.outputs.sha_short }}
+      registry_port: ${{ steps.registry.outputs.port }} 
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set Version Tag
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Fetch Dynamic Minikube Registry Port
+        id: registry
+        run: |
+          PORT=$(podman port minikube 5000/tcp | cut -d':' -f2)
+          
+          if [ -z "$PORT" ]; then
+            echo "Error: Could not find Minikube registry port. Is the registry addon enabled?"
+            exit 1
+          fi
+          
+          echo "port=$PORT" >> $GITHUB_OUTPUT
+          echo "Dynamically targeting registry port: $PORT"
+
+      - name: Build & Push Backend
+        run: |
+          podman build -t localhost:${{ steps.registry.outputs.port }}/freelance-backend:${{ steps.vars.outputs.sha_short }} ./backend
+          podman push localhost:${{ steps.registry.outputs.port }}/freelance-backend:${{ steps.vars.outputs.sha_short }} --tls-verify=false
+
+      - name: Build & Push Frontend
+        run: |
+          podman build -t localhost:${{ steps.registry.outputs.port }}/freelance-frontend:${{ steps.vars.outputs.sha_short }} ./frontend
+          podman push localhost:${{ steps.registry.outputs.port }}/freelance-frontend:${{ steps.vars.outputs.sha_short }} --tls-verify=false
+
+      - name: Local Image Cleanup
+        if: always()
+        run: podman image prune -f
+
+  # ---------------------------------------------------------
+  # JOB 3: Update GitOps Repository
+  # ---------------------------------------------------------
+  update-gitops-repo:
+    name: Update GitOps Manifests
+    needs: build-and-push
+    runs-on: self-hosted
+    steps:
+      - name: Checkout GitOps Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/freelance-bidding-gitops
+          token: ${{ secrets.GITOPS_PAT }}
+          ref: main
+          path: gitops-repo
+
+      - name: Update Image Tags in Manifests
+        run: |
+          NEW_TAG="${{ needs.build-and-push.outputs.new_tag }}"
+          
+          echo "Updating backend manifest..."
+          sed -i "s|image: localhost:5000/freelance-backend:.*|image: localhost:5000/freelance-backend:$NEW_TAG|g" \
+            gitops-repo/apps/backend/backend-manifests.yaml
+          
+          echo "Updating frontend manifest..."
+          sed -i "s|image: localhost:5000/freelance-frontend:.*|image: localhost:5000/freelance-frontend:$NEW_TAG|g" \
+            gitops-repo/apps/frontend/frontend-manifests.yaml
+
+      - name: Commit and Push
+        working-directory: gitops-repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: update images to tag ${{ needs.build-and-push.outputs.new_tag }} [skip ci]" || echo "No changes to commit"
+          git push origin main
