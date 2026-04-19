@@ -40,14 +40,13 @@ jobs:
       - name: Install and Run Sonar Scanner
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # This uses your freelnace-token
         run: |
           npm install -g sonarqube-scanner
           
-          # Use the EXACT manual keys you just created in Steps 1 and 2
           sonar-scanner \
-            -Dsonar.organization=harshvardhan-manual-org \
-            -Dsonar.projectKey=freelance-bidding-manual \
+            -Dsonar.organization=harshvardhan-projects \
+            -Dsonar.projectKey=harshvardhan-projects_freelance-bidding-website \
             -Dsonar.sources=backend,frontend \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.javascript.node.maxspace=4096 \
