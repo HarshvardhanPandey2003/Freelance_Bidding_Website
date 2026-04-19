@@ -51,6 +51,7 @@ jobs:
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.javascript.node.maxspace=4096 \
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/build/**,**/.next/**,**/*.test.js,**/*.spec.js \
+            -Dsonar.branch.name=master \
             -Dsonar.qualitygate.wait=false \
 
   # ---------------------------------------------------------
